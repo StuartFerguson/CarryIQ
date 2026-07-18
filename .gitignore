@@ -1,0 +1,13 @@
+bin/
+obj/
+TestResults/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.log
+*.db
+*.duckdb
+user-settings.json
+

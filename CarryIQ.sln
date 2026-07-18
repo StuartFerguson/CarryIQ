@@ -1,0 +1,52 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarryIQ.Domain", "src\CarryIQ.Domain\CarryIQ.Domain.csproj", "{0D926036-F7F3-4505-8130-871628301457}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarryIQ.Application", "src\CarryIQ.Application\CarryIQ.Application.csproj", "{3C58A084-B6A5-4A01-9A25-274090251BCF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarryIQ.Infrastructure", "src\CarryIQ.Infrastructure\CarryIQ.Infrastructure.csproj", "{8392CBDA-C3EE-4C99-B57C-BAB0F9459319}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarryIQ.App", "src\CarryIQ.App\CarryIQ.App.csproj", "{A4C20DB4-35AF-4B84-B625-9A3B8BDB0503}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarryIQ.UnitTests", "tests\CarryIQ.UnitTests\CarryIQ.UnitTests.csproj", "{141E6A26-E105-43CC-BB2E-311E7CECB444}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarryIQ.IntegrationTests", "tests\CarryIQ.IntegrationTests\CarryIQ.IntegrationTests.csproj", "{3532AF78-2BAF-4DFC-ADF4-5B42345CE05F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0D926036-F7F3-4505-8130-871628301457}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D926036-F7F3-4505-8130-871628301457}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D926036-F7F3-4505-8130-871628301457}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D926036-F7F3-4505-8130-871628301457}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C58A084-B6A5-4A01-9A25-274090251BCF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C58A084-B6A5-4A01-9A25-274090251BCF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C58A084-B6A5-4A01-9A25-274090251BCF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C58A084-B6A5-4A01-9A25-274090251BCF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8392CBDA-C3EE-4C99-B57C-BAB0F9459319}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8392CBDA-C3EE-4C99-B57C-BAB0F9459319}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8392CBDA-C3EE-4C99-B57C-BAB0F9459319}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8392CBDA-C3EE-4C99-B57C-BAB0F9459319}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4C20DB4-35AF-4B84-B625-9A3B8BDB0503}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4C20DB4-35AF-4B84-B625-9A3B8BDB0503}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4C20DB4-35AF-4B84-B625-9A3B8BDB0503}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4C20DB4-35AF-4B84-B625-9A3B8BDB0503}.Release|Any CPU.Build.0 = Release|Any CPU
+		{141E6A26-E105-43CC-BB2E-311E7CECB444}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{141E6A26-E105-43CC-BB2E-311E7CECB444}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{141E6A26-E105-43CC-BB2E-311E7CECB444}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{141E6A26-E105-43CC-BB2E-311E7CECB444}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3532AF78-2BAF-4DFC-ADF4-5B42345CE05F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3532AF78-2BAF-4DFC-ADF4-5B42345CE05F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3532AF78-2BAF-4DFC-ADF4-5B42345CE05F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3532AF78-2BAF-4DFC-ADF4-5B42345CE05F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>CarryIQ.IntegrationTests</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CarryIQ.Domain\CarryIQ.Domain.csproj" />
+    <ProjectReference Include="..\..\src\CarryIQ.Application\CarryIQ.Application.csproj" />
+    <ProjectReference Include="..\..\src\CarryIQ.Infrastructure\CarryIQ.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

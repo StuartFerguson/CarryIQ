@@ -1,0 +1,24 @@
+<Window x:Class="CarryIQ.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CarryIQ"
+        Width="1100"
+        Height="700"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F7FA">
+    <Grid Margin="32">
+        <Border Padding="28" CornerRadius="18" Background="White" BorderBrush="#E2E8F0" BorderThickness="1">
+            <StackPanel>
+                <TextBlock Text="{Binding Title}" FontSize="32" FontWeight="SemiBold" Foreground="#102A43" />
+                <TextBlock Text="{Binding Subtitle}" Margin="0,8,0,0" FontSize="16" Foreground="#52606D" />
+                <TextBlock Text="{Binding StatusMessage}" Margin="0,24,0,0" FontSize="14" Foreground="#334E68" TextWrapping="Wrap" />
+                <Border Margin="0,24,0,0" Padding="16" Background="#F8FAFC" CornerRadius="12" BorderBrush="#E2E8F0" BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Text="Database location" FontWeight="SemiBold" Foreground="#102A43" />
+                        <TextBlock Text="{Binding DatabasePath}" Margin="0,8,0,0" TextWrapping="Wrap" Foreground="#334E68" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
