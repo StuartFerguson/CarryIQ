@@ -27,6 +27,7 @@ public class DuckDbPracticeSessionRepositoryTests
             WindDirection = "NW",
             ElevationMetres = 42m,
             Notes = "Long game focus",
+            IsArchived = false,
             CreatedAt = DateTimeOffset.Parse("2026-07-19T09:15:00Z"),
             UpdatedAt = DateTimeOffset.Parse("2026-07-19T10:30:00Z"),
         };
@@ -57,6 +58,28 @@ public class DuckDbPracticeSessionRepositoryTests
         Assert.Single(results);
         Assert.Equal(2, results[0].ShotCount);
         Assert.Equal(1, results[0].ValidShotCount);
+    }
+
+    [Fact]
+    public async Task SearchSessionsFiltersByArchiveState()
+    {
+        using var scope = new TestScope();
+        await scope.Initializer.InitializeAsync(CancellationToken.None);
+
+        var activeSessionId = await scope.SeedPracticeSessionAsync();
+        var archivedSessionId = await scope.SeedPracticeSessionAsync(isArchived: true);
+
+        var activeResults = await scope.Sessions.SearchAsync(
+            new SessionSearchCriteria(scope.DefaultGolferProfileId, Archived: false),
+            CancellationToken.None);
+        var archivedResults = await scope.Sessions.SearchAsync(
+            new SessionSearchCriteria(scope.DefaultGolferProfileId, Archived: true),
+            CancellationToken.None);
+
+        Assert.Contains(activeResults, session => session.Id == activeSessionId);
+        Assert.DoesNotContain(activeResults, session => session.Id == archivedSessionId);
+        Assert.Contains(archivedResults, session => session.Id == archivedSessionId);
+        Assert.DoesNotContain(archivedResults, session => session.Id == activeSessionId);
     }
 
     [Fact]

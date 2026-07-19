@@ -7,10 +7,15 @@ public sealed partial class MainWindowViewModel : ObservableObject
 {
     private ShellNavigationItemViewModel? selectedNavigationItem;
     private readonly ClubManagerViewModel? _clubManager;
+    private readonly SessionManagerViewModel? _sessionManager;
 
-    public MainWindowViewModel(IApplicationPaths applicationPaths, ClubManagerViewModel? clubManager = null)
+    public MainWindowViewModel(
+        IApplicationPaths applicationPaths,
+        ClubManagerViewModel? clubManager = null,
+        SessionManagerViewModel? sessionManager = null)
     {
         _clubManager = clubManager;
+        _sessionManager = sessionManager;
         ApplicationTitle = "CarryIQ";
         Subtitle = "Local golf analysis foundation";
         DatabasePath = applicationPaths.DatabasePath;
@@ -34,15 +39,17 @@ public sealed partial class MainWindowViewModel : ObservableObject
                 "Sessions",
                 "Session history",
                 "Browse and compare practice sessions without leaving the shell.",
-                new PlaceholderScreenViewModel(
-                    "Sessions",
-                    "Browse and compare practice sessions without leaving the shell.",
-                    [
-                        "List recent sessions with date, location, and sample counts.",
-                        "Open one session to review its shots and calculated summaries.",
-                        "Support keyboard-first browsing through the history list.",
-                    ],
-                    "This view will anchor the session review workflow.")),
+                sessionManager is null
+                    ? new PlaceholderScreenViewModel(
+                        "Sessions",
+                        "Browse and compare practice sessions without leaving the shell.",
+                        [
+                            "List recent sessions with date, location, and sample counts.",
+                            "Open one session to review its shots and calculated summaries.",
+                            "Support keyboard-first browsing through the history list.",
+                        ],
+                        "This view will anchor the session review workflow.")
+                    : sessionManager),
             CreateNavigationItem(
                 "Shot Entry",
                 "Manual capture",
@@ -194,6 +201,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
         if (_clubManager is not null)
         {
             await _clubManager.InitializeAsync(cancellationToken);
+        }
+
+        if (_sessionManager is not null)
+        {
+            await _sessionManager.InitializeAsync(cancellationToken);
         }
     }
 

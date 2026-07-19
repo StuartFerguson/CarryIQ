@@ -76,7 +76,7 @@ public sealed class TestScope : IDisposable
         return id;
     }
 
-    public async Task<Guid> SeedPracticeSessionAsync()
+    public async Task<Guid> SeedPracticeSessionAsync(bool isArchived = false)
     {
         var id = Guid.NewGuid();
         await ExecuteNonQueryAsync("""
@@ -84,11 +84,11 @@ public sealed class TestScope : IDisposable
                 Id, GolferProfileId, Name, SessionDate, StartTime, EndTime, LocationName,
                 SessionType, SurfaceType, BallType, LaunchMonitorSource, WeatherDescription,
                 TemperatureCelsius, WindSpeedMilesPerHour, WindDirection, ElevationMetres, Notes,
-                CreatedAt, UpdatedAt)
+                IsArchived, CreatedAt, UpdatedAt)
             VALUES (
                 $id, $golferProfileId, $name, $sessionDate, NULL, NULL, $locationName,
                 $sessionType, $surfaceType, $ballType, $launchMonitorSource, NULL,
-                NULL, NULL, NULL, NULL, $notes, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+                NULL, NULL, NULL, NULL, $notes, $isArchived, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
             """,
             new Dictionary<string, object?>
             {
@@ -102,6 +102,7 @@ public sealed class TestScope : IDisposable
                 ["$ballType"] = "Titleist Pro V1",
                 ["$launchMonitorSource"] = "Trackman",
                 ["$notes"] = "Baseline session",
+                ["$isArchived"] = isArchived,
             });
 
         return id;
