@@ -17,6 +17,7 @@ public static class AppHost
                 services.AddSingleton<IClubRepository, DuckDbClubRepository>();
                 services.AddSingleton<IPracticeSessionRepository, DuckDbPracticeSessionRepository>();
                 services.AddSingleton<IShotRepository, DuckDbShotRepository>();
+                services.AddSingleton<ClubManagerViewModel>();
                 services.AddSingleton<MainWindowViewModel>();
                 services.AddSingleton<MainWindow>();
             })

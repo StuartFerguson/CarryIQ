@@ -23,7 +23,8 @@ public sealed class DuckDbClubRepository : IClubRepository
             SELECT Id, GolferProfileId, Name, ClubType, Manufacturer, Model, Loft, Shaft, ShaftFlex,
                    LengthYards, IsActive, SortOrder, Notes, CreatedAt, UpdatedAt
             FROM Clubs
-            WHERE Id = $id;
+            WHERE Id = $id
+            LIMIT 1;
             """;
         DuckDbPersistenceHelpers.AddParameter(command, "$id", id);
 
@@ -52,9 +53,13 @@ public sealed class DuckDbClubRepository : IClubRepository
             sql.AppendLine("AND GolferProfileId = $golferProfileId");
         }
 
-        if (criteria.ActiveOnly == true)
+        if (criteria.ActiveOnly is true)
         {
             sql.AppendLine("AND IsActive = TRUE");
+        }
+        else if (criteria.ActiveOnly is false)
+        {
+            sql.AppendLine("AND IsActive = FALSE");
         }
 
         if (searchPattern is not null)
@@ -69,13 +74,14 @@ public sealed class DuckDbClubRepository : IClubRepository
                 """);
         }
 
-        sql.AppendLine("ORDER BY SortOrder, Name;");
+        sql.AppendLine("ORDER BY SortOrder, Name, CreatedAt;");
 
         await using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
 
         await using var command = connection.CreateCommand();
         command.CommandText = sql.ToString();
+
         if (criteria.GolferProfileId is Guid profileId)
         {
             DuckDbPersistenceHelpers.AddParameter(command, "$golferProfileId", profileId);
@@ -109,6 +115,7 @@ public sealed class DuckDbClubRepository : IClubRepository
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
         try
         {
+            await EnsureUniqueActiveClubNameAsync(connection, transaction, club, cancellationToken);
             await UpsertAsync(connection, transaction, club, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
@@ -124,20 +131,46 @@ public sealed class DuckDbClubRepository : IClubRepository
         await using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
 
-        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
-        try
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE Clubs
+            SET IsActive = FALSE, UpdatedAt = CURRENT_TIMESTAMP
+            WHERE Id = $id;
+            """;
+        DuckDbPersistenceHelpers.AddParameter(command, "$id", id);
+
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task EnsureUniqueActiveClubNameAsync(
+        DbConnection connection,
+        DbTransaction transaction,
+        Club club,
+        CancellationToken cancellationToken)
+    {
+        if (!club.IsActive)
         {
-            await ExecuteNonQueryAsync(connection, transaction, """
-                DELETE FROM WedgeSwingReferences WHERE ClubId = $id;
-                DELETE FROM Shots WHERE ClubId = $id;
-                DELETE FROM Clubs WHERE Id = $id;
-                """, id, cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            return;
         }
-        catch
+
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            SELECT COUNT(*)
+            FROM Clubs
+            WHERE GolferProfileId = $golferProfileId
+              AND Id <> $id
+              AND IsActive = TRUE
+              AND LOWER(TRIM(Name)) = LOWER(TRIM($name));
+            """;
+        DuckDbPersistenceHelpers.AddParameter(command, "$golferProfileId", club.GolferProfileId);
+        DuckDbPersistenceHelpers.AddParameter(command, "$id", club.Id);
+        DuckDbPersistenceHelpers.AddParameter(command, "$name", club.Name);
+
+        var count = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken), CultureInfo.InvariantCulture);
+        if (count > 0)
         {
-            await transaction.RollbackAsync(cancellationToken);
-            throw;
+            throw new InvalidOperationException($"An active club named '{club.Name}' already exists in this bag.");
         }
     }
 
@@ -189,20 +222,6 @@ public sealed class DuckDbClubRepository : IClubRepository
         DuckDbPersistenceHelpers.AddParameter(command, "$createdAt", DuckDbPersistenceHelpers.ToDbValue(club.CreatedAt));
         DuckDbPersistenceHelpers.AddParameter(command, "$updatedAt", DuckDbPersistenceHelpers.ToDbValue(club.UpdatedAt));
 
-        await command.ExecuteNonQueryAsync(cancellationToken);
-    }
-
-    private static async Task ExecuteNonQueryAsync(
-        DbConnection connection,
-        DbTransaction transaction,
-        string sql,
-        Guid id,
-        CancellationToken cancellationToken)
-    {
-        await using var command = connection.CreateCommand();
-        command.Transaction = transaction;
-        command.CommandText = sql;
-        DuckDbPersistenceHelpers.AddParameter(command, "$id", id);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 

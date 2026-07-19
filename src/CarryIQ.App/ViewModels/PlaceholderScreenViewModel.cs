@@ -4,7 +4,7 @@ public sealed class PlaceholderScreenViewModel(
     string title,
     string summary,
     IReadOnlyList<string> highlights,
-    string footer)
+    string footer) : IShellScreenViewModel
 {
     public string Title { get; } = title;
 

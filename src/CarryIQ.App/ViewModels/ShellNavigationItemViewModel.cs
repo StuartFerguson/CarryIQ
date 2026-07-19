@@ -4,7 +4,7 @@ public sealed class ShellNavigationItemViewModel(
     string title,
     string eyebrow,
     string summary,
-    PlaceholderScreenViewModel screen)
+    IShellScreenViewModel screen)
 {
     public string Title { get; } = title;
 
@@ -12,5 +12,5 @@ public sealed class ShellNavigationItemViewModel(
 
     public string Summary { get; } = summary;
 
-    public PlaceholderScreenViewModel Screen { get; } = screen;
+    public IShellScreenViewModel Screen { get; } = screen;
 }
