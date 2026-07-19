@@ -13,6 +13,8 @@ public static class AppHost
                 services.AddSingleton<IApplicationPaths, ApplicationPaths>();
                 services.AddSingleton<IDatabaseConnectionFactory, DuckDbConnectionFactory>();
                 services.AddSingleton<IDatabaseInitializer, DuckDbDatabaseInitializer>();
+                services.AddSingleton<IClubRepository, DuckDbClubRepository>();
+                services.AddSingleton<ClubManagerViewModel>();
                 services.AddSingleton<MainWindowViewModel>();
                 services.AddSingleton<MainWindow>();
             })

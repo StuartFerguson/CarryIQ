@@ -16,6 +16,8 @@ public partial class App : global::System.Windows.Application
         {
             var initializer = _host.Services.GetRequiredService<IDatabaseInitializer>();
             await initializer.InitializeAsync(CancellationToken.None);
+            var mainWindowViewModel = _host.Services.GetRequiredService<MainWindowViewModel>();
+            await mainWindowViewModel.InitializeAsync(CancellationToken.None);
         }
         catch
         {

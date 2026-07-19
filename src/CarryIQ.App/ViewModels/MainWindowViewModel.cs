@@ -1,6 +1,6 @@
 namespace CarryIQ.App;
 
-public sealed class MainWindowViewModel(IApplicationPaths applicationPaths)
+public sealed class MainWindowViewModel(IApplicationPaths applicationPaths, ClubManagerViewModel clubManager)
 {
     public string Title { get; } = "CarryIQ";
 
@@ -8,5 +8,12 @@ public sealed class MainWindowViewModel(IApplicationPaths applicationPaths)
 
     public string DatabasePath => applicationPaths.DatabasePath;
 
-    public string StatusMessage { get; } = "The local database is ready and the shell is wired for the first release.";
+    public string StatusMessage { get; } = "Manage the club bag, preserve historic shot links, and keep the default starter set editable.";
+
+    public ClubManagerViewModel ClubManager { get; } = clubManager;
+
+    public async Task InitializeAsync(CancellationToken cancellationToken)
+    {
+        await ClubManager.InitializeAsync(cancellationToken);
+    }
 }
