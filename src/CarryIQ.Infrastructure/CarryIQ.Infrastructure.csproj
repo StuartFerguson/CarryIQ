@@ -10,6 +10,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Migrations\*.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\CarryIQ.Application\CarryIQ.Application.csproj" />
     <ProjectReference Include="..\CarryIQ.Domain\CarryIQ.Domain.csproj" />
   </ItemGroup>

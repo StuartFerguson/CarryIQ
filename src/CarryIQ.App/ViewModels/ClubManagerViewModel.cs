@@ -1,11 +1,11 @@
-using System.Globalization;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 namespace CarryIQ.App;
 
-public sealed class ClubManagerViewModel : ObservableObject
+public sealed class ClubManagerViewModel : ObservableObject, IShellScreenViewModel
 {
     private readonly IClubRepository _clubRepository;
     private readonly IDatabaseConnectionFactory _connectionFactory;
@@ -48,6 +48,12 @@ public sealed class ClubManagerViewModel : ObservableObject
     public ObservableCollection<ClubSummary> Clubs => _clubs;
 
     public ClubEditorViewModel Editor => _editor;
+
+    public string Title { get; } = "Clubs";
+
+    public string Summary { get; } = "Maintain the club bag, ordering, activation, and validation.";
+
+    public string Footer { get; } = "Club management starts here.";
 
     public ClubSummary? SelectedClub
     {

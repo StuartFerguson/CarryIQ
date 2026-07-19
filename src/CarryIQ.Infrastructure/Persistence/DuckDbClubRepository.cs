@@ -1,5 +1,6 @@
 using System.Data.Common;
 using System.Globalization;
+using System.Text;
 
 namespace CarryIQ.Infrastructure;
 
@@ -7,7 +8,10 @@ public sealed class DuckDbClubRepository : IClubRepository
 {
     private readonly IDatabaseConnectionFactory _connectionFactory;
 
-    public DuckDbClubRepository(IDatabaseConnectionFactory connectionFactory) => _connectionFactory = connectionFactory;
+    public DuckDbClubRepository(IDatabaseConnectionFactory connectionFactory)
+    {
+        _connectionFactory = connectionFactory;
+    }
 
     public async Task<Club?> GetAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -16,14 +20,13 @@ public sealed class DuckDbClubRepository : IClubRepository
 
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT
-                Id, GolferProfileId, Name, ClubType, Manufacturer, Model, Loft,
-                Shaft, ShaftFlex, LengthYards, IsActive, SortOrder, Notes, CreatedAt, UpdatedAt
+            SELECT Id, GolferProfileId, Name, ClubType, Manufacturer, Model, Loft, Shaft, ShaftFlex,
+                   LengthYards, IsActive, SortOrder, Notes, CreatedAt, UpdatedAt
             FROM Clubs
             WHERE Id = $id
             LIMIT 1;
             """;
-        AddParameter(command, "$id", id);
+        DuckDbPersistenceHelpers.AddParameter(command, "$id", id);
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken))
@@ -38,46 +41,55 @@ public sealed class DuckDbClubRepository : IClubRepository
         ClubSearchCriteria criteria,
         CancellationToken cancellationToken)
     {
-        await using var connection = _connectionFactory.CreateConnection();
-        await connection.OpenAsync(cancellationToken);
-
-        var sql = """
+        var sql = new StringBuilder("""
             SELECT Id, Name, ClubType, SortOrder, IsActive
             FROM Clubs
             WHERE 1 = 1
-            """;
+            """);
 
-        if (criteria.GolferProfileId is not null)
+        var searchPattern = BuildSearchPattern(criteria.SearchText);
+        if (criteria.GolferProfileId is Guid golferProfileId)
         {
-            sql += " AND GolferProfileId = $golferProfileId";
+            sql.AppendLine("AND GolferProfileId = $golferProfileId");
         }
 
         if (criteria.ActiveOnly is true)
         {
-            sql += " AND IsActive = TRUE";
+            sql.AppendLine("AND IsActive = TRUE");
         }
         else if (criteria.ActiveOnly is false)
         {
-            sql += " AND IsActive = FALSE";
+            sql.AppendLine("AND IsActive = FALSE");
         }
 
-        if (!string.IsNullOrWhiteSpace(criteria.SearchText))
+        if (searchPattern is not null)
         {
-            sql += " AND LOWER(Name) LIKE LOWER($searchText)";
+            sql.AppendLine("""
+                AND (
+                    LOWER(Name) LIKE $searchPattern
+                    OR LOWER(COALESCE(Manufacturer, '')) LIKE $searchPattern
+                    OR LOWER(COALESCE(Model, '')) LIKE $searchPattern
+                    OR LOWER(COALESCE(Notes, '')) LIKE $searchPattern
+                )
+                """);
         }
 
-        sql += " ORDER BY SortOrder, Name, CreatedAt;";
+        sql.AppendLine("ORDER BY SortOrder, Name, CreatedAt;");
+
+        await using var connection = _connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
 
         await using var command = connection.CreateCommand();
-        command.CommandText = sql;
-        if (criteria.GolferProfileId is not null)
+        command.CommandText = sql.ToString();
+
+        if (criteria.GolferProfileId is Guid profileId)
         {
-            AddParameter(command, "$golferProfileId", criteria.GolferProfileId);
+            DuckDbPersistenceHelpers.AddParameter(command, "$golferProfileId", profileId);
         }
 
-        if (!string.IsNullOrWhiteSpace(criteria.SearchText))
+        if (searchPattern is not null)
         {
-            AddParameter(command, "$searchText", $"%{criteria.SearchText.Trim()}%");
+            DuckDbPersistenceHelpers.AddParameter(command, "$searchPattern", searchPattern);
         }
 
         var results = new List<ClubSummary>();
@@ -85,11 +97,11 @@ public sealed class DuckDbClubRepository : IClubRepository
         while (await reader.ReadAsync(cancellationToken))
         {
             results.Add(new ClubSummary(
-                reader.GetGuid(0),
-                reader.GetString(1),
-                (ClubType)reader.GetInt32(2),
-                reader.GetInt32(3),
-                reader.GetBoolean(4)));
+                DuckDbPersistenceHelpers.ReadGuid(reader, "Id"),
+                DuckDbPersistenceHelpers.ReadString(reader, "Name"),
+                DuckDbPersistenceHelpers.ReadEnum<ClubType>(reader, "ClubType"),
+                DuckDbPersistenceHelpers.ReadInt32(reader, "SortOrder"),
+                DuckDbPersistenceHelpers.ReadBoolean(reader, "IsActive")));
         }
 
         return results;
@@ -100,9 +112,76 @@ public sealed class DuckDbClubRepository : IClubRepository
         await using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync(cancellationToken);
 
-        await EnsureUniqueActiveClubNameAsync(connection, club, cancellationToken);
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await EnsureUniqueActiveClubNameAsync(connection, transaction, club, cancellationToken);
+            await UpsertAsync(connection, transaction, club, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        await using var connection = _connectionFactory.CreateConnection();
+        await connection.OpenAsync(cancellationToken);
 
         await using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE Clubs
+            SET IsActive = FALSE, UpdatedAt = CURRENT_TIMESTAMP
+            WHERE Id = $id;
+            """;
+        DuckDbPersistenceHelpers.AddParameter(command, "$id", id);
+
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task EnsureUniqueActiveClubNameAsync(
+        DbConnection connection,
+        DbTransaction transaction,
+        Club club,
+        CancellationToken cancellationToken)
+    {
+        if (!club.IsActive)
+        {
+            return;
+        }
+
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            SELECT COUNT(*)
+            FROM Clubs
+            WHERE GolferProfileId = $golferProfileId
+              AND Id <> $id
+              AND IsActive = TRUE
+              AND LOWER(TRIM(Name)) = LOWER(TRIM($name));
+            """;
+        DuckDbPersistenceHelpers.AddParameter(command, "$golferProfileId", club.GolferProfileId);
+        DuckDbPersistenceHelpers.AddParameter(command, "$id", club.Id);
+        DuckDbPersistenceHelpers.AddParameter(command, "$name", club.Name);
+
+        var count = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken), CultureInfo.InvariantCulture);
+        if (count > 0)
+        {
+            throw new InvalidOperationException($"An active club named '{club.Name}' already exists in this bag.");
+        }
+    }
+
+    private static async Task UpsertAsync(
+        DbConnection connection,
+        DbTransaction transaction,
+        Club club,
+        CancellationToken cancellationToken)
+    {
+        await using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = """
             INSERT INTO Clubs (
                 Id, GolferProfileId, Name, ClubType, Manufacturer, Model, Loft,
@@ -126,107 +205,53 @@ public sealed class DuckDbClubRepository : IClubRepository
                 CreatedAt = excluded.CreatedAt,
                 UpdatedAt = excluded.UpdatedAt;
             """;
-        AddParameters(command, club);
+
+        DuckDbPersistenceHelpers.AddParameter(command, "$id", club.Id);
+        DuckDbPersistenceHelpers.AddParameter(command, "$golferProfileId", club.GolferProfileId);
+        DuckDbPersistenceHelpers.AddParameter(command, "$name", club.Name);
+        DuckDbPersistenceHelpers.AddParameter(command, "$clubType", (int)club.ClubType);
+        DuckDbPersistenceHelpers.AddParameter(command, "$manufacturer", club.Manufacturer);
+        DuckDbPersistenceHelpers.AddParameter(command, "$model", club.Model);
+        DuckDbPersistenceHelpers.AddParameter(command, "$loft", club.Loft);
+        DuckDbPersistenceHelpers.AddParameter(command, "$shaft", club.Shaft);
+        DuckDbPersistenceHelpers.AddParameter(command, "$shaftFlex", club.ShaftFlex);
+        DuckDbPersistenceHelpers.AddParameter(command, "$lengthYards", DuckDbPersistenceHelpers.ToDbValue(club.Length));
+        DuckDbPersistenceHelpers.AddParameter(command, "$isActive", club.IsActive);
+        DuckDbPersistenceHelpers.AddParameter(command, "$sortOrder", club.SortOrder);
+        DuckDbPersistenceHelpers.AddParameter(command, "$notes", club.Notes);
+        DuckDbPersistenceHelpers.AddParameter(command, "$createdAt", DuckDbPersistenceHelpers.ToDbValue(club.CreatedAt));
+        DuckDbPersistenceHelpers.AddParameter(command, "$updatedAt", DuckDbPersistenceHelpers.ToDbValue(club.UpdatedAt));
+
         await command.ExecuteNonQueryAsync(cancellationToken);
-    }
-
-    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
-    {
-        await using var connection = _connectionFactory.CreateConnection();
-        await connection.OpenAsync(cancellationToken);
-
-        await using var command = connection.CreateCommand();
-        command.CommandText = """
-            UPDATE Clubs
-            SET IsActive = FALSE, UpdatedAt = CURRENT_TIMESTAMP
-            WHERE Id = $id;
-            """;
-        AddParameter(command, "$id", id);
-        await command.ExecuteNonQueryAsync(cancellationToken);
-    }
-
-    private static async Task EnsureUniqueActiveClubNameAsync(
-        DbConnection connection,
-        Club club,
-        CancellationToken cancellationToken)
-    {
-        if (!club.IsActive)
-        {
-            return;
-        }
-
-        await using var command = connection.CreateCommand();
-        command.CommandText = """
-            SELECT COUNT(*)
-            FROM Clubs
-            WHERE GolferProfileId = $golferProfileId
-              AND Id <> $id
-              AND IsActive = TRUE
-              AND LOWER(TRIM(Name)) = LOWER(TRIM($name));
-            """;
-        AddParameter(command, "$golferProfileId", club.GolferProfileId);
-        AddParameter(command, "$id", club.Id);
-        AddParameter(command, "$name", club.Name);
-
-        var count = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken), CultureInfo.InvariantCulture);
-        if (count > 0)
-        {
-            throw new InvalidOperationException($"An active club named '{club.Name}' already exists in this bag.");
-        }
     }
 
     private static Club MapClub(DbDataReader reader) =>
         new()
         {
-            Id = reader.GetGuid(0),
-            GolferProfileId = reader.GetGuid(1),
-            Name = reader.GetString(2),
-            ClubType = (ClubType)reader.GetInt32(3),
-            Manufacturer = reader.IsDBNull(4) ? null : reader.GetString(4),
-            Model = reader.IsDBNull(5) ? null : reader.GetString(5),
-            Loft = reader.IsDBNull(6) ? null : reader.GetDecimal(6),
-            Shaft = reader.IsDBNull(7) ? null : reader.GetString(7),
-            ShaftFlex = reader.IsDBNull(8) ? null : reader.GetString(8),
-            Length = reader.IsDBNull(9) ? null : Distance.FromYards(Convert.ToDecimal(reader.GetDouble(9), CultureInfo.InvariantCulture)),
-            IsActive = reader.GetBoolean(10),
-            SortOrder = reader.GetInt32(11),
-            Notes = reader.IsDBNull(12) ? null : reader.GetString(12),
-            CreatedAt = ToDateTimeOffset(reader.GetDateTime(13)),
-            UpdatedAt = ToDateTimeOffset(reader.GetDateTime(14)),
+            Id = DuckDbPersistenceHelpers.ReadGuid(reader, "Id"),
+            GolferProfileId = DuckDbPersistenceHelpers.ReadGuid(reader, "GolferProfileId"),
+            Name = DuckDbPersistenceHelpers.ReadString(reader, "Name"),
+            ClubType = DuckDbPersistenceHelpers.ReadEnum<ClubType>(reader, "ClubType"),
+            Manufacturer = DuckDbPersistenceHelpers.ReadNullableString(reader, "Manufacturer"),
+            Model = DuckDbPersistenceHelpers.ReadNullableString(reader, "Model"),
+            Loft = DuckDbPersistenceHelpers.ReadNullableDecimal(reader, "Loft"),
+            Shaft = DuckDbPersistenceHelpers.ReadNullableString(reader, "Shaft"),
+            ShaftFlex = DuckDbPersistenceHelpers.ReadNullableString(reader, "ShaftFlex"),
+            Length = DuckDbPersistenceHelpers.ReadNullableDistance(reader, "LengthYards"),
+            IsActive = DuckDbPersistenceHelpers.ReadBoolean(reader, "IsActive"),
+            SortOrder = DuckDbPersistenceHelpers.ReadInt32(reader, "SortOrder"),
+            Notes = DuckDbPersistenceHelpers.ReadNullableString(reader, "Notes"),
+            CreatedAt = DuckDbPersistenceHelpers.ReadDateTimeOffset(reader, "CreatedAt"),
+            UpdatedAt = DuckDbPersistenceHelpers.ReadDateTimeOffset(reader, "UpdatedAt"),
         };
 
-    private static DateTimeOffset ToDateTimeOffset(DateTime value) =>
-        value.Kind switch
+    private static string? BuildSearchPattern(string? searchText)
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
         {
-            DateTimeKind.Unspecified => new DateTimeOffset(DateTime.SpecifyKind(value, DateTimeKind.Utc)),
-            DateTimeKind.Utc => new DateTimeOffset(value, TimeSpan.Zero),
-            _ => new DateTimeOffset(value.ToUniversalTime(), TimeSpan.Zero),
-        };
+            return null;
+        }
 
-    private static void AddParameters(DbCommand command, Club club)
-    {
-        AddParameter(command, "$id", club.Id);
-        AddParameter(command, "$golferProfileId", club.GolferProfileId);
-        AddParameter(command, "$name", club.Name);
-        AddParameter(command, "$clubType", (int)club.ClubType);
-        AddParameter(command, "$manufacturer", club.Manufacturer);
-        AddParameter(command, "$model", club.Model);
-        AddParameter(command, "$loft", club.Loft);
-        AddParameter(command, "$shaft", club.Shaft);
-        AddParameter(command, "$shaftFlex", club.ShaftFlex);
-        AddParameter(command, "$lengthYards", club.Length?.Yards);
-        AddParameter(command, "$isActive", club.IsActive);
-        AddParameter(command, "$sortOrder", club.SortOrder);
-        AddParameter(command, "$notes", club.Notes);
-        AddParameter(command, "$createdAt", club.CreatedAt.UtcDateTime);
-        AddParameter(command, "$updatedAt", club.UpdatedAt.UtcDateTime);
-    }
-
-    private static void AddParameter(DbCommand command, string name, object? value)
-    {
-        var parameter = command.CreateParameter();
-        parameter.ParameterName = name.TrimStart('$', '@', ':');
-        parameter.Value = value ?? DBNull.Value;
-        command.Parameters.Add(parameter);
+        return $"%{searchText.Trim().ToLower(CultureInfo.InvariantCulture)}%";
     }
 }

@@ -1,6 +1,5 @@
 using System.Data.Common;
 using System.Globalization;
-using DuckDB.NET.Data;
 
 namespace CarryIQ.IntegrationTests.Persistence;
 
@@ -12,12 +11,12 @@ public class DuckDbDatabaseInitializerTests
         using var scope = new TestScope();
         await scope.Initializer.InitializeAsync(CancellationToken.None);
 
-        await using var connection = new DuckDBConnection($"Data Source={scope.Paths.DatabasePath}");
+        await using var connection = scope.OpenConnection();
         await connection.OpenAsync(CancellationToken.None);
 
-        Assert.Equal(1L, await ScalarAsync<long>(connection, "SELECT COUNT(*) FROM SchemaVersion;"));
-        Assert.Equal(1L, await ScalarAsync<long>(connection, "SELECT COUNT(*) FROM GolferProfiles;"));
-        Assert.Equal(15L, await ScalarAsync<long>(connection, "SELECT COUNT(*) FROM Clubs;"));
+        Assert.Equal(2L, await scope.ScalarAsync<long>(connection, "SELECT MAX(Version) FROM SchemaVersion;"));
+        Assert.Equal(1L, await scope.ScalarAsync<long>(connection, "SELECT COUNT(*) FROM GolferProfiles;"));
+        Assert.Equal(15L, await scope.ScalarAsync<long>(connection, "SELECT COUNT(*) FROM Clubs;"));
     }
 
     [Fact]
@@ -28,54 +27,26 @@ public class DuckDbDatabaseInitializerTests
         await scope.Initializer.InitializeAsync(CancellationToken.None);
         await scope.Initializer.InitializeAsync(CancellationToken.None);
 
-        await using var connection = new DuckDBConnection($"Data Source={scope.Paths.DatabasePath}");
+        await using var connection = scope.OpenConnection();
         await connection.OpenAsync(CancellationToken.None);
 
-        Assert.Equal(1L, await ScalarAsync<long>(connection, "SELECT COUNT(*) FROM GolferProfiles;"));
-        Assert.Equal(15L, await ScalarAsync<long>(connection, "SELECT COUNT(*) FROM Clubs;"));
+        Assert.Equal(1L, await scope.ScalarAsync<long>(connection, "SELECT COUNT(*) FROM GolferProfiles;"));
+        Assert.Equal(15L, await scope.ScalarAsync<long>(connection, "SELECT COUNT(*) FROM Clubs;"));
     }
 
-    private static async Task<T> ScalarAsync<T>(DbConnection connection, string sql)
+    [Fact]
+    public async Task InitializeAppliesPendingMigrationsWithoutBreakingSeedData()
     {
-        await using var command = connection.CreateCommand();
-        command.CommandText = sql;
-        return (T)Convert.ChangeType(await command.ExecuteScalarAsync(CancellationToken.None), typeof(T), CultureInfo.InvariantCulture)!;
-    }
+        using var scope = new TestScope();
+        await scope.CreateVersion1DatabaseAsync();
 
-    private sealed class TestScope : IDisposable
-    {
-        public TestScope()
-        {
-            RootDirectory = Path.Combine(Path.GetTempPath(), "CarryIQ", Guid.NewGuid().ToString("N"));
-            Paths = new TestApplicationPaths(RootDirectory);
-            Initializer = new DuckDbDatabaseInitializer(Paths, new DuckDbConnectionFactory(Paths));
-        }
+        await scope.Initializer.InitializeAsync(CancellationToken.None);
 
-        public string RootDirectory { get; }
+        await using var connection = scope.OpenConnection();
+        await connection.OpenAsync(CancellationToken.None);
 
-        public TestApplicationPaths Paths { get; }
-
-        public DuckDbDatabaseInitializer Initializer { get; }
-
-        public void Dispose()
-        {
-            if (Directory.Exists(RootDirectory))
-            {
-                Directory.Delete(RootDirectory, recursive: true);
-            }
-        }
-    }
-
-    private sealed class TestApplicationPaths(string rootDirectory) : IApplicationPaths
-    {
-        public string DataDirectory => rootDirectory;
-
-        public string DatabasePath => Path.Combine(rootDirectory, "carryiq.duckdb");
-
-        public string SettingsPath => Path.Combine(rootDirectory, "user-settings.json");
-
-        public string LogsDirectory => Path.Combine(rootDirectory, "logs");
-
-        public string BackupsDirectory => Path.Combine(rootDirectory, "backups");
+        Assert.Equal(2L, await scope.ScalarAsync<long>(connection, "SELECT MAX(Version) FROM SchemaVersion;"));
+        Assert.Equal(1L, await scope.ScalarAsync<long>(connection, "SELECT COUNT(*) FROM GolferProfiles;"));
+        Assert.Equal(15L, await scope.ScalarAsync<long>(connection, "SELECT COUNT(*) FROM Clubs;"));
     }
 }
