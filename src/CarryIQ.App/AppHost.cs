@@ -12,7 +12,11 @@ public static class AppHost
             {
                 services.AddSingleton<IApplicationPaths, ApplicationPaths>();
                 services.AddSingleton<IDatabaseConnectionFactory, DuckDbConnectionFactory>();
+                services.AddSingleton<DuckDbMigrationRunner>();
                 services.AddSingleton<IDatabaseInitializer, DuckDbDatabaseInitializer>();
+                services.AddSingleton<IClubRepository, DuckDbClubRepository>();
+                services.AddSingleton<IPracticeSessionRepository, DuckDbPracticeSessionRepository>();
+                services.AddSingleton<IShotRepository, DuckDbShotRepository>();
                 services.AddSingleton<MainWindowViewModel>();
                 services.AddSingleton<MainWindow>();
             })

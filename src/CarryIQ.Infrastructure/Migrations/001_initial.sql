@@ -154,3 +154,7 @@ CREATE TABLE IF NOT EXISTS Backups (
     CreatedAtUtc TIMESTAMP NOT NULL,
     Notes TEXT NULL
 );
+
+INSERT INTO SchemaVersion (Version, AppliedAtUtc)
+SELECT 1, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM SchemaVersion);
