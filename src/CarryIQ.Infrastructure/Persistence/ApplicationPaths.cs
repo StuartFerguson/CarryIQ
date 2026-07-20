@@ -2,23 +2,21 @@ namespace CarryIQ.Infrastructure;
 
 public sealed class ApplicationPaths : IApplicationPaths
 {
+    private readonly ApplicationDataPaths _layout;
+
     public ApplicationPaths()
     {
         var root = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        DataDirectory = Path.Combine(root, "CarryIQ");
-        DatabasePath = Path.Combine(DataDirectory, "carryiq.duckdb");
-        SettingsPath = Path.Combine(DataDirectory, "user-settings.json");
-        LogsDirectory = Path.Combine(DataDirectory, "logs");
-        BackupsDirectory = Path.Combine(DataDirectory, "backups");
+        _layout = ApplicationDataPaths.Create(root);
     }
 
-    public string DataDirectory { get; }
+    public string DataDirectory => _layout.DataDirectory;
 
-    public string DatabasePath { get; }
+    public string DatabasePath => _layout.DatabasePath;
 
-    public string SettingsPath { get; }
+    public string SettingsPath => _layout.SettingsPath;
 
-    public string LogsDirectory { get; }
+    public string LogsDirectory => _layout.LogsDirectory;
 
-    public string BackupsDirectory { get; }
+    public string BackupsDirectory => _layout.BackupsDirectory;
 }

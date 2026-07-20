@@ -51,8 +51,8 @@ The first release supports generic CSV files and SwingLogic SLX exports through 
 ## Architecture
 
 - `CarryIQ.Domain` contains entities, enums, value objects, and analytics models.
-- `CarryIQ.Application` contains use cases and repository/importer contracts.
-- `CarryIQ.Infrastructure` contains DuckDB persistence and bootstrap logic.
+- `CarryIQ.Application` contains use cases, repository/importer contracts, and storage-path abstractions.
+- `CarryIQ.Infrastructure` contains DuckDB persistence, path adapters, and bootstrap logic.
 - `CarryIQ.App` contains the WPF shell and dependency-injection startup.
 
 ## Roadmap
@@ -62,4 +62,3 @@ v0.1 focuses on the foundation, local persistence, manual entry, import, analyti
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
-
