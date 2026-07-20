@@ -70,6 +70,10 @@
             <local:ClubManagerView />
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type local:SessionManagerViewModel}">
+            <local:SessionManagerView />
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type local:ShotEntryViewModel}">
             <local:ShotEntryView />
         </DataTemplate>

@@ -19,6 +19,7 @@ public static class AppHost
                 services.AddSingleton<IShotRepository, DuckDbShotRepository>();
                 services.AddSingleton<IShotEntryPreferencesStore, JsonShotEntryPreferencesStore>();
                 services.AddSingleton<ClubManagerViewModel>();
+                services.AddSingleton<SessionManagerViewModel>();
                 services.AddSingleton<ShotEntryViewModel>();
                 services.AddSingleton<MainWindowViewModel>();
                 services.AddSingleton<MainWindow>();

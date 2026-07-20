@@ -105,7 +105,20 @@ public class ShotEntryViewModelTests
         new(Guid.NewGuid(), name, ClubType.Iron, sortOrder, true);
 
     private static PracticeSessionSummary CreateSessionSummary(DateOnly sessionDate, string name) =>
-        new(Guid.NewGuid(), Guid.NewGuid(), name, sessionDate, SessionType.DrivingRange, "Range", "Trackman", 0, 0);
+        new(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            name,
+            sessionDate,
+            StartTime: null,
+            EndTime: null,
+            Duration: null,
+            SessionType.DrivingRange,
+            "Range",
+            "Trackman",
+            0,
+            0,
+            false);
 
     private sealed class TestClubRepository(IReadOnlyList<ClubSummary> clubs) : IClubRepository
     {

@@ -23,7 +23,7 @@ public sealed class DuckDbPracticeSessionRepository : IPracticeSessionRepository
             SELECT Id, GolferProfileId, Name, SessionDate, StartTime, EndTime, LocationName,
                    SessionType, SurfaceType, BallType, LaunchMonitorSource, WeatherDescription,
                    TemperatureCelsius, WindSpeedMilesPerHour, WindDirection, ElevationMetres, Notes,
-                   CreatedAt, UpdatedAt
+                   IsArchived, CreatedAt, UpdatedAt
             FROM PracticeSessions
             WHERE Id = $id;
             """;
@@ -43,8 +43,8 @@ public sealed class DuckDbPracticeSessionRepository : IPracticeSessionRepository
         CancellationToken cancellationToken)
     {
         var sql = new StringBuilder("""
-            SELECT ps.Id, ps.GolferProfileId, ps.Name, ps.SessionDate, ps.SessionType,
-                   ps.LocationName, ps.LaunchMonitorSource,
+            SELECT ps.Id, ps.GolferProfileId, ps.Name, ps.SessionDate, ps.StartTime, ps.EndTime,
+                   ps.SessionType, ps.LocationName, ps.LaunchMonitorSource, ps.IsArchived,
                    COUNT(s.Id) AS ShotCount,
                    COALESCE(SUM(CASE WHEN s.IsIncluded THEN 1 ELSE 0 END), 0) AS ValidShotCount
             FROM PracticeSessions ps
@@ -68,6 +68,21 @@ public sealed class DuckDbPracticeSessionRepository : IPracticeSessionRepository
             sql.AppendLine("AND CAST(ps.SessionDate AS TIMESTAMP) < $endDateExclusive");
         }
 
+        if (criteria.SessionType is SessionType sessionTypeFilterForSql)
+        {
+            sql.AppendLine("AND ps.SessionType = $sessionType");
+        }
+
+        if (!string.IsNullOrWhiteSpace(criteria.LaunchMonitorSource))
+        {
+            sql.AppendLine("AND LOWER(COALESCE(ps.LaunchMonitorSource, '')) LIKE $launchMonitorSource");
+        }
+
+        if (criteria.Archived is bool archivedFilterForSql)
+        {
+            sql.AppendLine("AND ps.IsArchived = $archived");
+        }
+
         if (searchPattern is not null)
         {
             sql.AppendLine("""
@@ -82,9 +97,9 @@ public sealed class DuckDbPracticeSessionRepository : IPracticeSessionRepository
         }
 
         sql.AppendLine("""
-            GROUP BY ps.Id, ps.GolferProfileId, ps.Name, ps.SessionDate, ps.SessionType,
-                     ps.LocationName, ps.LaunchMonitorSource
-            ORDER BY ps.SessionDate DESC, ps.Name;
+            GROUP BY ps.Id, ps.GolferProfileId, ps.Name, ps.SessionDate, ps.StartTime, ps.EndTime,
+                     ps.SessionType, ps.LocationName, ps.LaunchMonitorSource, ps.IsArchived
+            ORDER BY ps.SessionDate DESC, ps.StartTime DESC, ps.Name;
             """);
 
         await using var connection = _connectionFactory.CreateConnection();
@@ -108,6 +123,21 @@ public sealed class DuckDbPracticeSessionRepository : IPracticeSessionRepository
             DuckDbPersistenceHelpers.AddParameter(command, "$endDateExclusive", DateTime.SpecifyKind(end.AddDays(1).ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc));
         }
 
+        if (criteria.SessionType is SessionType sessionTypeFilterForParam)
+        {
+            DuckDbPersistenceHelpers.AddParameter(command, "$sessionType", (int)sessionTypeFilterForParam);
+        }
+
+        if (!string.IsNullOrWhiteSpace(criteria.LaunchMonitorSource))
+        {
+            DuckDbPersistenceHelpers.AddParameter(command, "$launchMonitorSource", BuildSearchPattern(criteria.LaunchMonitorSource));
+        }
+
+        if (criteria.Archived is bool archivedFilterForParam)
+        {
+            DuckDbPersistenceHelpers.AddParameter(command, "$archived", archivedFilterForParam);
+        }
+
         if (searchPattern is not null)
         {
             DuckDbPersistenceHelpers.AddParameter(command, "$searchPattern", searchPattern);
@@ -122,11 +152,17 @@ public sealed class DuckDbPracticeSessionRepository : IPracticeSessionRepository
                 DuckDbPersistenceHelpers.ReadGuid(reader, "GolferProfileId"),
                 DuckDbPersistenceHelpers.ReadString(reader, "Name"),
                 DuckDbPersistenceHelpers.ReadDateOnly(reader, "SessionDate"),
+                DuckDbPersistenceHelpers.ReadNullableTimeOnly(reader, "StartTime"),
+                DuckDbPersistenceHelpers.ReadNullableTimeOnly(reader, "EndTime"),
+                CalculateDuration(
+                    DuckDbPersistenceHelpers.ReadNullableTimeOnly(reader, "StartTime"),
+                    DuckDbPersistenceHelpers.ReadNullableTimeOnly(reader, "EndTime")),
                 DuckDbPersistenceHelpers.ReadEnum<SessionType>(reader, "SessionType"),
                 DuckDbPersistenceHelpers.ReadNullableString(reader, "LocationName"),
                 DuckDbPersistenceHelpers.ReadNullableString(reader, "LaunchMonitorSource"),
                 (int)DuckDbPersistenceHelpers.ReadInt64(reader, "ShotCount"),
-                (int)DuckDbPersistenceHelpers.ReadInt64(reader, "ValidShotCount")));
+                (int)DuckDbPersistenceHelpers.ReadInt64(reader, "ValidShotCount"),
+                DuckDbPersistenceHelpers.ReadBoolean(reader, "IsArchived")));
         }
 
         return results;
@@ -184,12 +220,12 @@ public sealed class DuckDbPracticeSessionRepository : IPracticeSessionRepository
                 Id, GolferProfileId, Name, SessionDate, StartTime, EndTime, LocationName,
                 SessionType, SurfaceType, BallType, LaunchMonitorSource, WeatherDescription,
                 TemperatureCelsius, WindSpeedMilesPerHour, WindDirection, ElevationMetres, Notes,
-                CreatedAt, UpdatedAt)
+                IsArchived, CreatedAt, UpdatedAt)
             VALUES (
                 $id, $golferProfileId, $name, $sessionDate, $startTime, $endTime, $locationName,
                 $sessionType, $surfaceType, $ballType, $launchMonitorSource, $weatherDescription,
                 $temperatureCelsius, $windSpeedMilesPerHour, $windDirection, $elevationMetres, $notes,
-                $createdAt, $updatedAt)
+                $isArchived, $createdAt, $updatedAt)
             ON CONFLICT (Id) DO UPDATE SET
                 GolferProfileId = excluded.GolferProfileId,
                 Name = excluded.Name,
@@ -207,6 +243,7 @@ public sealed class DuckDbPracticeSessionRepository : IPracticeSessionRepository
                 WindDirection = excluded.WindDirection,
                 ElevationMetres = excluded.ElevationMetres,
                 Notes = excluded.Notes,
+                IsArchived = excluded.IsArchived,
                 CreatedAt = excluded.CreatedAt,
                 UpdatedAt = excluded.UpdatedAt;
             """;
@@ -228,6 +265,7 @@ public sealed class DuckDbPracticeSessionRepository : IPracticeSessionRepository
         DuckDbPersistenceHelpers.AddParameter(command, "$windDirection", session.WindDirection);
         DuckDbPersistenceHelpers.AddParameter(command, "$elevationMetres", session.ElevationMetres);
         DuckDbPersistenceHelpers.AddParameter(command, "$notes", session.Notes);
+        DuckDbPersistenceHelpers.AddParameter(command, "$isArchived", session.IsArchived);
         DuckDbPersistenceHelpers.AddParameter(command, "$createdAt", DuckDbPersistenceHelpers.ToDbValue(session.CreatedAt));
         DuckDbPersistenceHelpers.AddParameter(command, "$updatedAt", DuckDbPersistenceHelpers.ToDbValue(session.UpdatedAt));
 
@@ -268,9 +306,20 @@ public sealed class DuckDbPracticeSessionRepository : IPracticeSessionRepository
             WindDirection = DuckDbPersistenceHelpers.ReadNullableString(reader, "WindDirection"),
             ElevationMetres = DuckDbPersistenceHelpers.ReadNullableDecimal(reader, "ElevationMetres"),
             Notes = DuckDbPersistenceHelpers.ReadNullableString(reader, "Notes"),
+            IsArchived = DuckDbPersistenceHelpers.ReadBoolean(reader, "IsArchived"),
             CreatedAt = DuckDbPersistenceHelpers.ReadDateTimeOffset(reader, "CreatedAt"),
             UpdatedAt = DuckDbPersistenceHelpers.ReadDateTimeOffset(reader, "UpdatedAt"),
         };
+
+    private static TimeSpan? CalculateDuration(TimeOnly? startTime, TimeOnly? endTime)
+    {
+        if (startTime is null || endTime is null)
+        {
+            return null;
+        }
+
+        return endTime.Value.ToTimeSpan() - startTime.Value.ToTimeSpan();
+    }
 
     private static string? BuildSearchPattern(string? searchText)
     {

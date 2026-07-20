@@ -1,0 +1,226 @@
+<UserControl x:Class="CarryIQ.App.SessionManagerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:CarryIQ.App"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d">
+    <UserControl.Resources>
+        <local:DateOnlyToDateTimeConverter x:Key="DateOnlyToDateTimeConverter" />
+    </UserControl.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="260" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Margin="0,0,0,18" Padding="20" Background="#FFFFFF" BorderBrush="#D9E2EC" BorderThickness="1" CornerRadius="18">
+            <StackPanel>
+                <TextBlock Text="Practice sessions" FontSize="24" FontWeight="SemiBold" Foreground="#102A43" />
+                <TextBlock Text="Filter the history, review totals, and manage archived records from a single master-detail layout."
+                           Margin="0,6,0,0"
+                           Foreground="#627D98"
+                           TextWrapping="Wrap" />
+
+                <WrapPanel Margin="0,16,0,0">
+                    <StackPanel Margin="0,0,12,12">
+                        <TextBlock Text="Search" Foreground="#334E68" />
+                        <TextBox Width="220"
+                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,12,12">
+                        <TextBlock Text="Golfer" Foreground="#334E68" />
+                        <ComboBox Width="200"
+                                  ItemsSource="{Binding GolferProfiles}"
+                                  DisplayMemberPath="DisplayText"
+                                  SelectedValuePath="Value"
+                                  SelectedValue="{Binding SelectedGolferProfileId}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,12,12">
+                        <TextBlock Text="Type" Foreground="#334E68" />
+                        <ComboBox Width="160"
+                                  ItemsSource="{Binding SessionTypeOptions}"
+                                  DisplayMemberPath="DisplayText"
+                                  SelectedValuePath="Value"
+                                  SelectedValue="{Binding SelectedSessionType}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,12,12">
+                        <TextBlock Text="Archive" Foreground="#334E68" />
+                        <ComboBox Width="160"
+                                  ItemsSource="{Binding ArchiveOptions}"
+                                  DisplayMemberPath="DisplayText"
+                                  SelectedValuePath="Value"
+                                  SelectedValue="{Binding SelectedArchived}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,12,12">
+                        <TextBlock Text="Source" Foreground="#334E68" />
+                        <TextBox Width="180"
+                                 Text="{Binding LaunchMonitorSourceFilter, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,12,12">
+                        <TextBlock Text="From" Foreground="#334E68" />
+                        <TextBox Width="140"
+                                 Text="{Binding StartDate, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,12,12">
+                        <TextBlock Text="To" Foreground="#334E68" />
+                        <TextBox Width="140"
+                                 Text="{Binding EndDate, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+                </WrapPanel>
+
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="#B91C1C" TextWrapping="Wrap" />
+
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    <Button Content="New" Command="{Binding NewCommand}" Padding="14,8" Margin="0,0,8,0" />
+                    <Button Content="Save" Command="{Binding SaveCommand}" Padding="14,8" Margin="0,0,8,0" />
+                    <Button Content="Duplicate" Command="{Binding DuplicateCommand}" Padding="14,8" Margin="0,0,8,0" />
+                    <Button Content="{Binding ArchiveButtonText}" Command="{Binding ArchiveCommand}" Padding="14,8" Margin="0,0,8,0" />
+                    <Button Content="Delete"
+                            Padding="14,8"
+                            Margin="0,0,8,0"
+                            Click="DeleteButton_Click" />
+                    <Button Content="Refresh" Command="{Binding RefreshCommand}" Padding="14,8" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Margin="0,0,0,18" Padding="16" Background="#FFFFFF" BorderBrush="#D9E2EC" BorderThickness="1" CornerRadius="18">
+                <DataGrid x:Name="SessionsGrid"
+                      ItemsSource="{Binding Sessions}"
+                      SelectedItem="{Binding SelectedSession, Mode=TwoWay}"
+                      SelectionChanged="SessionsGrid_SelectionChanged"
+                      AutoGenerateColumns="False"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="None"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      SelectionUnit="FullRow"
+                      Background="Transparent"
+                      BorderThickness="0">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Date" Binding="{Binding SessionDate, StringFormat={}{0:yyyy-MM-dd}}" Width="110" />
+                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*" />
+                    <DataGridTextColumn Header="Type" Binding="{Binding SessionType}" Width="130" />
+                    <DataGridTextColumn Header="Location" Binding="{Binding DisplayLocationName}" Width="160" />
+                    <DataGridTextColumn Header="Duration" Binding="{Binding DisplayDuration}" Width="120" />
+                    <DataGridTextColumn Header="Shots" Binding="{Binding ShotCount}" Width="80" />
+                    <DataGridTextColumn Header="Valid" Binding="{Binding ValidShotCount}" Width="80" />
+                    <DataGridTextColumn Header="Source" Binding="{Binding DisplayLaunchMonitorSource}" Width="140" />
+                    <DataGridCheckBoxColumn Header="Archived" Binding="{Binding IsArchived}" Width="90" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <Border Grid.Row="2" Padding="20" Background="#FFFFFF" BorderBrush="#D9E2EC" BorderThickness="1" CornerRadius="18">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Text="Edit session" FontSize="24" FontWeight="SemiBold" Foreground="#102A43" />
+                    <TextBlock Text="Use the detail pane to update the selected session, duplicate it, or archive it for later."
+                               Margin="0,6,0,18"
+                               Foreground="#627D98"
+                               TextWrapping="Wrap" />
+
+                    <Border Margin="0,0,0,16" Padding="12" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="12">
+                        <StackPanel>
+                            <TextBlock Text="Validation" FontWeight="SemiBold" Foreground="#102A43" />
+                            <TextBlock Text="{Binding Editor.ValidationMessage}" Margin="0,6,0,0" Foreground="#52606D" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <UniformGrid Columns="2" Margin="0,0,0,12">
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Name" Foreground="#334E68" />
+                            <TextBox Text="{Binding Editor.Name, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Date" Foreground="#334E68" />
+                            <DatePicker SelectedDate="{Binding Editor.SessionDate, Mode=TwoWay, Converter={StaticResource DateOnlyToDateTimeConverter}}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Start time" Foreground="#334E68" />
+                            <ComboBox ItemsSource="{Binding Editor.TimeOptions}"
+                                      SelectedItem="{Binding Editor.StartTime, Mode=TwoWay}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding StringFormat={}{0:HH:mm}}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="End time" Foreground="#334E68" />
+                            <ComboBox ItemsSource="{Binding Editor.TimeOptions}"
+                                      SelectedItem="{Binding Editor.EndTime, Mode=TwoWay}">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding StringFormat={}{0:HH:mm}}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Session type" Foreground="#334E68" />
+                            <ComboBox ItemsSource="{Binding Editor.SessionTypes}"
+                                      SelectedItem="{Binding Editor.SessionType}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Surface" Foreground="#334E68" />
+                            <ComboBox ItemsSource="{Binding Editor.SurfaceTypes}"
+                                      SelectedItem="{Binding Editor.SurfaceType}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Location" Foreground="#334E68" />
+                            <TextBox Text="{Binding Editor.LocationName, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Launch monitor source" Foreground="#334E68" />
+                            <TextBox Text="{Binding Editor.LaunchMonitorSource, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Ball type" Foreground="#334E68" />
+                            <TextBox Text="{Binding Editor.BallType, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Weather" Foreground="#334E68" />
+                            <TextBox Text="{Binding Editor.WeatherDescription, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Temperature C" Foreground="#334E68" />
+                            <TextBox Text="{Binding Editor.TemperatureCelsius, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Wind speed mph" Foreground="#334E68" />
+                            <TextBox Text="{Binding Editor.WindSpeedMilesPerHour, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Wind direction" Foreground="#334E68" />
+                            <TextBox Text="{Binding Editor.WindDirection, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Elevation metres" Foreground="#334E68" />
+                            <TextBox Text="{Binding Editor.ElevationMetres, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                    </UniformGrid>
+
+                    <StackPanel Margin="0,0,0,12">
+                        <TextBlock Text="Notes" Foreground="#334E68" />
+                        <TextBox Text="{Binding Editor.Notes, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="96" TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <CheckBox Content="Archived" IsChecked="{Binding Editor.IsArchived}" Margin="0,0,16,0" />
+                        <TextBlock VerticalAlignment="Center"
+                                   Foreground="#627D98"
+                                   Text="{Binding Editor.CreatedAt, StringFormat=Created: {0:u}}" />
+                        <TextBlock VerticalAlignment="Center"
+                                   Margin="16,0,0,0"
+                                   Foreground="#627D98"
+                                   Text="{Binding Editor.UpdatedAt, StringFormat=Updated: {0:u}}" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>
