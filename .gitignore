@@ -2,6 +2,7 @@ bin/
 obj/
 TestResults/
 .vs/
+.worktrees/
 *.user
 *.suo
 *.userosscache
@@ -10,4 +11,3 @@ TestResults/
 *.db
 *.duckdb
 user-settings.json
-
