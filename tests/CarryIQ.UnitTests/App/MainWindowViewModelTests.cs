@@ -29,6 +29,22 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public void ChangingSelectionUsesTheWedgeMatrixScreenWhenAvailable()
+    {
+        var wedgeMatrix = new WedgeMatrixViewModel(
+            new EmptyClubRepository(),
+            new EmptyWedgeSwingReferenceRepository(),
+            golferProfileId: Guid.NewGuid());
+        var viewModel = new MainWindowViewModel(new TestApplicationPaths(), wedgeMatrix: wedgeMatrix);
+
+        viewModel.SelectedNavigationItem = viewModel.NavigationItems[6];
+
+        Assert.Equal("Wedge Matrix", viewModel.SelectedNavigationItem?.Title);
+        Assert.Equal("Wedge Matrix", viewModel.CurrentScreen?.Title);
+        Assert.Equal("Phase 1 is read-only. Toggle inactive wedges to compare the full bag without editing references yet.", viewModel.CurrentScreen?.Footer);
+    }
+
+    [Fact]
     public void ChangingSelectionUsesTheAnalyticsScreenWhenAvailable()
     {
         var analytics = new AnalyticsViewModel(new EmptyClubRepository(), new EmptyShotRepository());
@@ -76,5 +92,11 @@ public class MainWindowViewModelTests
 
         public Task<IReadOnlyList<Shot>> SearchAsync(ShotSearchCriteria criteria, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<Shot>>([]);
+    }
+
+    private sealed class EmptyWedgeSwingReferenceRepository : IWedgeSwingReferenceRepository
+    {
+        public Task<IReadOnlyList<WedgeSwingReference>> SearchAsync(Guid golferProfileId, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<WedgeSwingReference>>([]);
     }
 }

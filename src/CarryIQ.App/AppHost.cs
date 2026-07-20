@@ -17,11 +17,13 @@ public static class AppHost
                 services.AddSingleton<IClubRepository, DuckDbClubRepository>();
                 services.AddSingleton<IPracticeSessionRepository, DuckDbPracticeSessionRepository>();
                 services.AddSingleton<IShotRepository, DuckDbShotRepository>();
+                services.AddSingleton<IWedgeSwingReferenceRepository, DuckDbWedgeSwingReferenceRepository>();
                 services.AddSingleton<IShotEntryPreferencesStore, JsonShotEntryPreferencesStore>();
                 services.AddSingleton<ClubManagerViewModel>();
                 services.AddSingleton<SessionManagerViewModel>();
                 services.AddSingleton<ShotEntryViewModel>();
                 services.AddSingleton<ShotReviewViewModel>();
+                services.AddSingleton<WedgeMatrixViewModel>();
                 services.AddSingleton<AnalyticsViewModel>();
                 services.AddSingleton<MainWindowViewModel>();
                 services.AddSingleton<MainWindow>();

@@ -20,6 +20,7 @@ public sealed class TestScope : IDisposable
         Clubs = new DuckDbClubRepository(_connectionFactory);
         Sessions = new DuckDbPracticeSessionRepository(_connectionFactory);
         Shots = new DuckDbShotRepository(_connectionFactory);
+        WedgeSwingReferences = new DuckDbWedgeSwingReferenceRepository(_connectionFactory);
     }
 
     public DuckDbDatabaseInitializer Initializer { get; }
@@ -29,6 +30,8 @@ public sealed class TestScope : IDisposable
     public IPracticeSessionRepository Sessions { get; }
 
     public IShotRepository Shots { get; }
+
+    public IWedgeSwingReferenceRepository WedgeSwingReferences { get; }
 
     public IApplicationPaths Paths => _paths;
 
@@ -209,6 +212,45 @@ public sealed class TestScope : IDisposable
             });
 
         return shot;
+    }
+
+    public async Task<Guid> SeedWedgeSwingReferenceAsync(
+        Guid clubId,
+        string swingLabel,
+        string? clockPosition,
+        decimal? targetDistanceYards,
+        decimal? averageCarryYards,
+        decimal? carryStandardDeviationYards,
+        int sampleSize,
+        bool isManualOverride)
+    {
+        var id = Guid.NewGuid();
+        await ExecuteNonQueryAsync("""
+            INSERT INTO WedgeSwingReferences (
+                Id, GolferProfileId, ClubId, SwingLabel, SwingType, ClockPosition,
+                TargetDistanceYards, AverageCarryYards, CarryStandardDeviationYards,
+                SampleSize, IsManualOverride, UpdatedAt)
+            VALUES (
+                $id, $golferProfileId, $clubId, $swingLabel, $swingType, $clockPosition,
+                $targetDistanceYards, $averageCarryYards, $carryStandardDeviationYards,
+                $sampleSize, $isManualOverride, CURRENT_TIMESTAMP);
+            """,
+            new Dictionary<string, object?>
+            {
+                ["$id"] = id,
+                ["$golferProfileId"] = DefaultGolferProfileId,
+                ["$clubId"] = clubId,
+                ["$swingLabel"] = swingLabel,
+                ["$swingType"] = (int)SwingType.Full,
+                ["$clockPosition"] = clockPosition,
+                ["$targetDistanceYards"] = targetDistanceYards,
+                ["$averageCarryYards"] = averageCarryYards,
+                ["$carryStandardDeviationYards"] = carryStandardDeviationYards,
+                ["$sampleSize"] = sampleSize,
+                ["$isManualOverride"] = isManualOverride,
+            });
+
+        return id;
     }
 
     public Guid DefaultGolferProfileId => GetDefaultGolferProfileIdAsync().GetAwaiter().GetResult();

@@ -10,6 +10,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly SessionManagerViewModel? _sessionManager;
     private readonly ShotEntryViewModel? _shotEntry;
     private readonly ShotReviewViewModel? _shotReview;
+    private readonly WedgeMatrixViewModel? _wedgeMatrix;
     private readonly AnalyticsViewModel? _analytics;
 
     public MainWindowViewModel(
@@ -18,12 +19,14 @@ public sealed partial class MainWindowViewModel : ObservableObject
         SessionManagerViewModel? sessionManager = null,
         ShotEntryViewModel? shotEntry = null,
         ShotReviewViewModel? shotReview = null,
+        WedgeMatrixViewModel? wedgeMatrix = null,
         AnalyticsViewModel? analytics = null)
     {
         _clubManager = clubManager;
         _sessionManager = sessionManager;
         _shotEntry = shotEntry;
         _shotReview = shotReview;
+        _wedgeMatrix = wedgeMatrix;
         _analytics = analytics;
         ApplicationTitle = "CarryIQ";
         Subtitle = "Local golf analysis foundation";
@@ -121,15 +124,17 @@ public sealed partial class MainWindowViewModel : ObservableObject
                 "Wedge Matrix",
                 "Short game",
                 "Track wedge distances and shot patterns across lofts and swings.",
-                new PlaceholderScreenViewModel(
-                    "Wedge Matrix",
-                    "Track wedge distances and shot patterns across lofts and swings.",
-                    [
-                        "Organize wedge data by loft, swing length, and carry band.",
-                        "Support repeatable short-game comparisons.",
-                        "Leave space for a matrix-style layout in a later pass.",
-                    ],
-                    "This is the placeholder for wedge matrix analysis.")),
+                wedgeMatrix is null
+                    ? new PlaceholderScreenViewModel(
+                        "Wedge Matrix",
+                        "Track wedge distances and shot patterns across lofts and swings.",
+                        [
+                            "Organize wedge data by loft, swing length, and carry band.",
+                            "Support repeatable short-game comparisons.",
+                            "Leave space for a matrix-style layout in a later pass.",
+                        ],
+                        "This is the placeholder for wedge matrix analysis.")
+                    : wedgeMatrix),
             CreateNavigationItem(
                 "Dispersion",
                 "Shot pattern",
@@ -244,6 +249,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
         if (_shotReview is not null)
         {
             await _shotReview.InitializeAsync(cancellationToken);
+        }
+
+        if (_wedgeMatrix is not null)
+        {
+            await _wedgeMatrix.InitializeAsync(cancellationToken);
         }
 
         if (_analytics is not null)
