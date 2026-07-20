@@ -35,4 +35,50 @@ public class CarryStatisticsCalculatorTests
 
         Assert.Equal(90m, ConsistencyScoreCalculator.Calculate(statistics));
     }
+
+    [Fact]
+    public void ClubAnalyticsCalculatorOrdersClubsAndCalculatesGaps()
+    {
+        var result = ClubAnalyticsCalculator.Calculate(
+            [
+                ("7 Iron", new[]
+                {
+                    Distance.FromYards(150m),
+                    Distance.FromYards(152m),
+                    Distance.FromYards(148m),
+                }),
+                ("8 Iron", new[]
+                {
+                    Distance.FromYards(140m),
+                    Distance.FromYards(138m),
+                    Distance.FromYards(142m),
+                }),
+            ],
+            ClubGapOption.Median);
+
+        Assert.Equal(2, result.Clubs.Count);
+        Assert.Equal("8 Iron", result.Clubs[0].ClubName);
+        Assert.Equal("7 Iron", result.Clubs[1].ClubName);
+        Assert.Equal(10m, result.Gaps[0].GapYards);
+        Assert.False(result.Gaps[0].HasOverlap);
+        Assert.False(result.Gaps[0].HasWarning);
+    }
+
+    [Fact]
+    public void ClubAnalyticsCalculatorFlagsInsufficientSampleCounts()
+    {
+        var result = ClubAnalyticsCalculator.Calculate(
+            [
+                ("Driver", new[]
+                {
+                    Distance.FromYards(260m),
+                    Distance.FromYards(255m),
+                }),
+            ],
+            ClubGapOption.Mean,
+            sampleWarningThreshold: 3);
+
+        Assert.Single(result.Clubs);
+        Assert.True(result.Clubs[0].HasInsufficientSamples);
+    }
 }

@@ -22,6 +22,7 @@ public static class AppHost
                 services.AddSingleton<SessionManagerViewModel>();
                 services.AddSingleton<ShotEntryViewModel>();
                 services.AddSingleton<ShotReviewViewModel>();
+                services.AddSingleton<AnalyticsViewModel>();
                 services.AddSingleton<MainWindowViewModel>();
                 services.AddSingleton<MainWindow>();
             })
