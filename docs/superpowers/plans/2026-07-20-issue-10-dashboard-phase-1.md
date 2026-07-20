@@ -4,7 +4,7 @@
 
 **Goal:** Build a performance-first dashboard that shows aggregate shot metrics immediately and a recent-session view underneath, using projection-style queries so the screen stays fast.
 
-**Architecture:** Keep the dashboard slice read-only and aggregation-driven. Add a small projection/query boundary in infrastructure that returns the handful of metrics the dashboard needs, then bind those summaries into a new dashboard view-model and WPF screen. The top of the dashboard should show metric cards for carry, consistency, left/right bias, offline spread, and sample size, while the lower section lists recent practice sessions and lets the user select one to inspect a compact session summary panel.
+**Architecture:** Keep the dashboard slice read-only and aggregation-driven. Add a small projection/query boundary in infrastructure that returns the handful of metrics the dashboard needs, then bind those summaries into a new dashboard view-model and WPF screen. The top of the dashboard should show metric cards for carry, consistency, left/right bias, long/short bias, offline spread, and sample size, while the lower section lists recent practice sessions and lets the user select one to inspect a compact session summary panel.
 
 **Tech Stack:** C# 13, .NET 10, WPF, CommunityToolkit.Mvvm, DuckDB, xUnit.
 
@@ -12,6 +12,7 @@
 
 - Dashboard data must come from aggregated/projection queries rather than loading all shots into memory.
 - Left-handed and right-handed golfers must be handled correctly in bias metrics using `DominantHand`.
+- Long/short bias must be present alongside left/right bias.
 - Trend lines and other time-series work are out of scope for this slice.
 - The dashboard must stay responsive with the existing local DuckDB database.
 - Session detail on this slice is summary-only, not raw shot editing.
@@ -93,6 +94,7 @@ public sealed record DashboardMetrics(
     decimal CarryStandardDeviationYards,
     decimal OfflineSpreadYards,
     decimal LeftRightBiasYards,
+    decimal LongShortBiasYards,
     int SampleSize);
 
 public sealed record RecentSessionSummary(
@@ -151,6 +153,7 @@ Assert.NotEmpty(viewModel.MetricCards);
 Assert.NotEmpty(viewModel.RecentSessions);
 Assert.NotNull(viewModel.SelectedSession);
 Assert.Contains(viewModel.MetricCards, card => card.Title == "Average carry");
+Assert.Contains(viewModel.MetricCards, card => card.Title == "Long/short bias");
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
