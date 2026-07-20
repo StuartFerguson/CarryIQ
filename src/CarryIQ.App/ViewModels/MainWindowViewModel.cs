@@ -8,14 +8,17 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private ShellNavigationItemViewModel? selectedNavigationItem;
     private readonly ClubManagerViewModel? _clubManager;
     private readonly SessionManagerViewModel? _sessionManager;
+    private readonly ShotEntryViewModel? _shotEntry;
 
     public MainWindowViewModel(
         IApplicationPaths applicationPaths,
         ClubManagerViewModel? clubManager = null,
-        SessionManagerViewModel? sessionManager = null)
+        SessionManagerViewModel? sessionManager = null,
+        ShotEntryViewModel? shotEntry = null)
     {
         _clubManager = clubManager;
         _sessionManager = sessionManager;
+        _shotEntry = shotEntry;
         ApplicationTitle = "CarryIQ";
         Subtitle = "Local golf analysis foundation";
         DatabasePath = applicationPaths.DatabasePath;
@@ -54,15 +57,17 @@ public sealed partial class MainWindowViewModel : ObservableObject
                 "Shot Entry",
                 "Manual capture",
                 "Enter shots directly when a session needs precise manual input.",
-                new PlaceholderScreenViewModel(
-                    "Shot Entry",
-                    "Enter shots directly when a session needs precise manual input.",
-                    [
-                        "Capture club, carry, speed, and notes in one place.",
-                        "Keep the form clean enough for quick, repetitive entry.",
-                        "Leave room for validation feedback and import parity later.",
-                    ],
-                    "This screen will support the manual shot workflow.")),
+                shotEntry is null
+                    ? new PlaceholderScreenViewModel(
+                        "Shot Entry",
+                        "Enter shots directly when a session needs precise manual input.",
+                        [
+                            "Capture club, carry, speed, and notes in one place.",
+                            "Keep the form clean enough for quick, repetitive entry.",
+                            "Leave room for validation feedback and import parity later.",
+                        ],
+                        "This screen will support the manual shot workflow.")
+                    : shotEntry),
             CreateNavigationItem(
                 "Imports",
                 "Bring data in",
@@ -206,6 +211,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
         if (_sessionManager is not null)
         {
             await _sessionManager.InitializeAsync(cancellationToken);
+        }
+
+        if (_shotEntry is not null)
+        {
+            await _shotEntry.InitializeAsync(cancellationToken);
         }
     }
 
