@@ -11,6 +11,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly ShotEntryViewModel? _shotEntry;
     private readonly ShotReviewViewModel? _shotReview;
     private readonly DashboardViewModel? _dashboard;
+    private readonly UtilitiesViewModel? _utilities;
     private readonly WedgeMatrixViewModel? _wedgeMatrix;
     private readonly AnalyticsViewModel? _analytics;
 
@@ -21,6 +22,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         ShotEntryViewModel? shotEntry = null,
         ShotReviewViewModel? shotReview = null,
         DashboardViewModel? dashboard = null,
+        UtilitiesViewModel? utilities = null,
         WedgeMatrixViewModel? wedgeMatrix = null,
         AnalyticsViewModel? analytics = null)
     {
@@ -29,6 +31,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _shotEntry = shotEntry;
         _shotReview = shotReview;
         _dashboard = dashboard;
+        _utilities = utilities;
         _wedgeMatrix = wedgeMatrix;
         _analytics = analytics;
         ApplicationTitle = "CarryIQ";
@@ -207,6 +210,21 @@ public sealed partial class MainWindowViewModel : ObservableObject
                         "Keep the route stable as the shell expands.",
                     ],
                     "Settings will eventually hold app configuration.")),
+            CreateNavigationItem(
+                "Utilities",
+                "Developer tools",
+                "Seed demo data and future local maintenance helpers.",
+                utilities is null
+                    ? new PlaceholderScreenViewModel(
+                        "Utilities",
+                        "Seed demo data and future local maintenance helpers.",
+                        [
+                            "Generate practice sessions and shots for dashboard testing.",
+                            "Create starter clubs when the bag is empty.",
+                            "Leave room for future local maintenance actions.",
+                        ],
+                        "This hub collects developer-facing tools.")
+                    : utilities),
         ];
 
         SelectedNavigationItem = NavigationItems[0];
@@ -259,6 +277,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
         if (_dashboard is not null)
         {
             await _dashboard.InitializeAsync(cancellationToken);
+        }
+
+        if (_utilities is not null)
+        {
+            await _utilities.InitializeAsync(cancellationToken);
         }
 
         if (_wedgeMatrix is not null)

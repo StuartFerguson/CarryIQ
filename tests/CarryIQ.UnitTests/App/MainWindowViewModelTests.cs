@@ -1,5 +1,6 @@
 using CarryIQ.App;
 using CarryIQ.Application;
+using CarryIQ.Infrastructure;
 
 namespace CarryIQ.UnitTests.App;
 
@@ -13,7 +14,7 @@ public class MainWindowViewModelTests
         Assert.Equal("CarryIQ", viewModel.ApplicationTitle);
         Assert.Equal("Dashboard", viewModel.SelectedNavigationItem?.Title);
         Assert.Equal("Dashboard", viewModel.CurrentScreen?.Title);
-        Assert.Equal(12, viewModel.NavigationItems.Count);
+        Assert.Equal(13, viewModel.NavigationItems.Count);
     }
 
     [Fact]
@@ -28,6 +29,19 @@ public class MainWindowViewModelTests
         Assert.Equal("Dashboard", viewModel.SelectedNavigationItem?.Title);
         Assert.Equal("Dashboard", viewModel.CurrentScreen?.Title);
         Assert.Equal("A performance-first summary of carry, consistency, bias, and recent practice sessions.", viewModel.CurrentScreen?.Summary);
+    }
+
+    [Fact]
+    public void UtilitiesNavigationUsesTheUtilitiesScreenWhenAvailable()
+    {
+        var utilities = new UtilitiesViewModel(new EmptyDemoDataSeeder());
+        var viewModel = new MainWindowViewModel(new TestApplicationPaths(), utilities: utilities);
+
+        viewModel.SelectedNavigationItem = viewModel.NavigationItems[12];
+
+        Assert.Equal("Utilities", viewModel.SelectedNavigationItem?.Title);
+        Assert.Equal("Utilities", viewModel.CurrentScreen?.Title);
+        Assert.Equal("Local helper tools for generating demo data and other maintenance tasks.", viewModel.CurrentScreen?.Summary);
     }
 
     [Fact]
@@ -100,6 +114,12 @@ public class MainWindowViewModelTests
     {
         public Task<DashboardProjectionSource> LoadAsync(Guid golferProfileId, int recentSessionCount, CancellationToken cancellationToken) =>
             Task.FromResult(new DashboardProjectionSource([], []));
+    }
+
+    private sealed class EmptyDemoDataSeeder : IDemoDataSeeder
+    {
+        public Task<DemoDataSeedResult> SeedAsync(DemoDataSeedOptions options, CancellationToken cancellationToken) =>
+            Task.FromResult(new DemoDataSeedResult(0, 0, 0, 0));
     }
 
     private sealed class EmptyShotRepository : IShotRepository

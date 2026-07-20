@@ -86,6 +86,10 @@
             <local:DashboardView />
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type local:UtilitiesViewModel}">
+            <local:UtilitiesView />
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type local:AnalyticsViewModel}">
             <local:AnalyticsView />
         </DataTemplate>
