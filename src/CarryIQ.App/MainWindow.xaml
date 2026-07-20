@@ -70,6 +70,10 @@
             <local:ClubManagerView />
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type local:ShotEntryViewModel}">
+            <local:ShotEntryView />
+        </DataTemplate>
+
         <Style x:Key="ShellNavItemStyle" TargetType="{x:Type ListBoxItem}">
             <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}" />
             <Setter Property="Margin" Value="0,0,0,10" />
