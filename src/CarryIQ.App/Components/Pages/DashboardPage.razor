@@ -1,0 +1,13 @@
+<PageCard>
+    <SectionHeader Title="@ViewModel.Title"
+                   Summary="@ViewModel.Summary" />
+
+    <div class="placeholder-footer">
+        Dashboard content will be ported into this page in the next task.
+    </div>
+</PageCard>
+
+@code {
+    [Parameter, EditorRequired]
+    public DashboardViewModel ViewModel { get; set; } = default!;
+}

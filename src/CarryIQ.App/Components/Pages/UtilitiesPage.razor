@@ -1,0 +1,13 @@
+<PageCard>
+    <SectionHeader Title="@ViewModel.Title"
+                   Summary="@ViewModel.Summary" />
+
+    <div class="placeholder-footer">
+        Utilities actions will be expanded in the workflow port.
+    </div>
+</PageCard>
+
+@code {
+    [Parameter, EditorRequired]
+    public UtilitiesViewModel ViewModel { get; set; } = default!;
+}

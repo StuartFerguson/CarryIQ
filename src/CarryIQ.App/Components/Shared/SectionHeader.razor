@@ -1,0 +1,12 @@
+<div class="section-header">
+    <h2>@Title</h2>
+    <p>@Summary</p>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string Summary { get; set; } = string.Empty;
+}

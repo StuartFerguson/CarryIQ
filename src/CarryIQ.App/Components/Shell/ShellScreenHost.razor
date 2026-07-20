@@ -1,0 +1,7 @@
+<DynamicComponent Type="@ShellScreenComponentMap.Resolve(Screen?.GetType())"
+                  Parameters="@(new Dictionary<string, object?> { ["ViewModel"] = Screen! })" />
+
+@code {
+    [Parameter]
+    public IShellScreenViewModel? Screen { get; set; }
+}

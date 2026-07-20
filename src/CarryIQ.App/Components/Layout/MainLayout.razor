@@ -1,0 +1,46 @@
+@inject MainWindowViewModel ViewModel
+
+<div class="shell">
+    <aside class="shell-nav">
+        <div class="shell-brand">
+            <div class="shell-badge">CIQ</div>
+            <div>
+                <div class="shell-title">@ViewModel.ApplicationTitle</div>
+                <div class="shell-subtitle">@ViewModel.Subtitle</div>
+            </div>
+        </div>
+
+        <NavMenu ViewModel="ViewModel"
+                 OnSelected="SelectNavigationItemAsync" />
+    </aside>
+
+    <main class="shell-main">
+        <section class="shell-hero">
+            <div>
+                <h1>@ViewModel.CurrentScreen?.Title</h1>
+                <p>@ViewModel.CurrentScreen?.Summary</p>
+            </div>
+
+            <div class="shell-db">
+                <span>Local database</span>
+                <strong>@ViewModel.DatabasePath</strong>
+            </div>
+        </section>
+
+        <section class="shell-body">
+            <ShellScreenHost Screen="ViewModel.CurrentScreen" />
+        </section>
+
+        <section class="shell-footer">
+            <p>@ViewModel.CurrentScreen?.Footer</p>
+        </section>
+    </main>
+</div>
+
+@code {
+    private async Task SelectNavigationItemAsync(ShellNavigationItemViewModel item)
+    {
+        ViewModel.SelectedNavigationItem = item;
+        await InvokeAsync(StateHasChanged);
+    }
+}

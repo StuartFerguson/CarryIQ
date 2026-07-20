@@ -1,0 +1,31 @@
+@if (ViewModel is PlaceholderScreenViewModel placeholder)
+{
+    <PageCard>
+        <SectionHeader Title="@placeholder.Title"
+                       Summary="@placeholder.Summary" />
+
+        <ul class="placeholder-highlights">
+            @foreach (var highlight in placeholder.Highlights)
+            {
+                <li>@highlight</li>
+            }
+        </ul>
+
+        <div class="placeholder-footer">
+            @placeholder.Footer
+        </div>
+    </PageCard>
+}
+else
+{
+    <PageCard>
+        <SectionHeader Title="@ViewModel.Title"
+                       Summary="@ViewModel.Summary" />
+        <div class="placeholder-footer">@ViewModel.Footer</div>
+    </PageCard>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public IShellScreenViewModel ViewModel { get; set; } = default!;
+}

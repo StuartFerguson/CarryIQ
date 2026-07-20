@@ -1,0 +1,13 @@
+<PageCard>
+    <SectionHeader Title="@ViewModel.Title"
+                   Summary="@ViewModel.Summary" />
+
+    <div class="placeholder-footer">
+        Club management will be filled out in the workflow port.
+    </div>
+</PageCard>
+
+@code {
+    [Parameter, EditorRequired]
+    public ClubManagerViewModel ViewModel { get; set; } = default!;
+}
