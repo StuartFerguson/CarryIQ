@@ -41,7 +41,7 @@ public class MainWindowViewModelTests
 
         Assert.Equal("Wedge Matrix", viewModel.SelectedNavigationItem?.Title);
         Assert.Equal("Wedge Matrix", viewModel.CurrentScreen?.Title);
-        Assert.Equal("Phase 1 is read-only. Toggle inactive wedges to compare the full bag without editing references yet.", viewModel.CurrentScreen?.Footer);
+        Assert.Equal("Select a wedge in the grid above to edit or replace the detailed A1, A2, and A3 references below.", viewModel.CurrentScreen?.Footer);
     }
 
     [Fact]
@@ -98,5 +98,8 @@ public class MainWindowViewModelTests
     {
         public Task<IReadOnlyList<WedgeSwingReference>> SearchAsync(Guid golferProfileId, CancellationToken cancellationToken) =>
             Task.FromResult<IReadOnlyList<WedgeSwingReference>>([]);
+
+        public Task SaveAsync(WedgeSwingReference reference, CancellationToken cancellationToken) =>
+            Task.CompletedTask;
     }
 }

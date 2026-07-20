@@ -6,4 +6,6 @@ namespace CarryIQ.Application;
 public interface IWedgeSwingReferenceRepository
 {
     Task<IReadOnlyList<WedgeSwingReference>> SearchAsync(Guid golferProfileId, CancellationToken cancellationToken);
+
+    Task SaveAsync(WedgeSwingReference reference, CancellationToken cancellationToken);
 }
