@@ -10,6 +10,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly SessionManagerViewModel? _sessionManager;
     private readonly ShotEntryViewModel? _shotEntry;
     private readonly ShotReviewViewModel? _shotReview;
+    private readonly DashboardViewModel? _dashboard;
     private readonly WedgeMatrixViewModel? _wedgeMatrix;
     private readonly AnalyticsViewModel? _analytics;
 
@@ -19,6 +20,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         SessionManagerViewModel? sessionManager = null,
         ShotEntryViewModel? shotEntry = null,
         ShotReviewViewModel? shotReview = null,
+        DashboardViewModel? dashboard = null,
         WedgeMatrixViewModel? wedgeMatrix = null,
         AnalyticsViewModel? analytics = null)
     {
@@ -26,6 +28,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _sessionManager = sessionManager;
         _shotEntry = shotEntry;
         _shotReview = shotReview;
+        _dashboard = dashboard;
         _wedgeMatrix = wedgeMatrix;
         _analytics = analytics;
         ApplicationTitle = "CarryIQ";
@@ -38,15 +41,17 @@ public sealed partial class MainWindowViewModel : ObservableObject
                 "Dashboard",
                 "Overview",
                 "A quick read on the latest practice sessions and carry summaries.",
-                new PlaceholderScreenViewModel(
-                    "Dashboard",
-                    "A quick read on the latest practice sessions and carry summaries.",
-                    [
-                        "Show the most recent session activity at a glance.",
-                        "Surface the key carry and consistency signals first.",
-                        "Reserve space for future alerts and shortcuts.",
-                    ],
-                    "The dashboard will become the first landing page for everyday use.")),
+                dashboard is null
+                    ? new PlaceholderScreenViewModel(
+                        "Dashboard",
+                        "A quick read on the latest practice sessions and carry summaries.",
+                        [
+                            "Show the most recent session activity at a glance.",
+                            "Surface the key carry and consistency signals first.",
+                            "Reserve space for future alerts and shortcuts.",
+                        ],
+                        "The dashboard will become the first landing page for everyday use.")
+                    : dashboard),
             CreateNavigationItem(
                 "Sessions",
                 "Session history",
@@ -249,6 +254,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
         if (_shotReview is not null)
         {
             await _shotReview.InitializeAsync(cancellationToken);
+        }
+
+        if (_dashboard is not null)
+        {
+            await _dashboard.InitializeAsync(cancellationToken);
         }
 
         if (_wedgeMatrix is not null)

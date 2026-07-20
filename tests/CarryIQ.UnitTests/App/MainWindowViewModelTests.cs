@@ -17,6 +17,20 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public void DashboardNavigationUsesTheDashboardScreenWhenAvailable()
+    {
+        var dashboard = new DashboardViewModel(
+            new EmptyDashboardProjectionRepository(),
+            golferProfileId: Guid.NewGuid(),
+            dominantHand: DominantHand.Right);
+        var viewModel = new MainWindowViewModel(new TestApplicationPaths(), dashboard: dashboard);
+
+        Assert.Equal("Dashboard", viewModel.SelectedNavigationItem?.Title);
+        Assert.Equal("Dashboard", viewModel.CurrentScreen?.Title);
+        Assert.Equal("A performance-first summary of carry, consistency, bias, and recent practice sessions.", viewModel.CurrentScreen?.Summary);
+    }
+
+    [Fact]
     public void ChangingSelectionUpdatesTheCurrentScreen()
     {
         var viewModel = new MainWindowViewModel(new TestApplicationPaths());
@@ -80,6 +94,12 @@ public class MainWindowViewModelTests
         public Task SaveAsync(Club club, CancellationToken cancellationToken) => Task.CompletedTask;
 
         public Task DeleteAsync(Guid id, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+
+    private sealed class EmptyDashboardProjectionRepository : IDashboardProjectionRepository
+    {
+        public Task<DashboardProjectionSource> LoadAsync(Guid golferProfileId, int recentSessionCount, CancellationToken cancellationToken) =>
+            Task.FromResult(new DashboardProjectionSource([], []));
     }
 
     private sealed class EmptyShotRepository : IShotRepository
