@@ -36,6 +36,8 @@ public sealed class WedgeMatrixCellViewModel
 
     public bool IsEmpty { get; }
 
+    public string OverrideText => IsManualOverride ? "Manual override" : string.Empty;
+
     public static WedgeMatrixCellViewModel Missing(WedgeSetupType setupType)
     {
         var label = setupType.ToString();

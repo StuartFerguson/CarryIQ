@@ -35,6 +35,24 @@ public class WedgeMatrixViewModelTests
     }
 
     [Fact]
+    public async Task InitializeAsyncMarksManualOverrideCellsInTheMatrix()
+    {
+        var golferProfileId = Guid.NewGuid();
+        var club = CreateClub(golferProfileId, "Sand Wedge", ClubType.SandWedge, 1, true);
+        var references = new[]
+        {
+            CreateReference(golferProfileId, club.Id, "A1", 56m, 53m, 1.8m, 9, isManualOverride: true),
+        };
+
+        var viewModel = CreateViewModel(golferProfileId, [club], references);
+
+        await viewModel.InitializeAsync(CancellationToken.None);
+
+        Assert.True(viewModel.Rows[0].A1.IsManualOverride);
+        Assert.Equal("Manual override", viewModel.Rows[0].A1.OverrideText);
+    }
+
+    [Fact]
     public async Task IncludeInactiveReloadsAndIncludesInactiveWedgeRows()
     {
         var golferProfileId = Guid.NewGuid();
@@ -60,6 +78,35 @@ public class WedgeMatrixViewModelTests
         Assert.Equal("82 yd", viewModel.Rows[1].A1.TargetDistanceText);
     }
 
+    [Fact]
+    public async Task SaveCommandPersistsSelectedRowEdits()
+    {
+        var golferProfileId = Guid.NewGuid();
+        var club = CreateClub(golferProfileId, "Gap Wedge", ClubType.GapWedge, 1, true);
+        var repository = new MutableWedgeSwingReferenceRepository(
+            [
+                CreateReference(golferProfileId, club.Id, "A1", 58m, 55m, 2.2m, 7, isManualOverride: false),
+            ]);
+        var viewModel = CreateViewModel(golferProfileId, [club], repository);
+
+        await viewModel.InitializeAsync(CancellationToken.None);
+        viewModel.SelectedRow = viewModel.Rows[0];
+        viewModel.SelectedRowEditor!.A1.TargetDistanceText = "60";
+        viewModel.SelectedRowEditor.A1.AverageCarryText = "57";
+        viewModel.SelectedRowEditor.A1.StandardDeviationText = "2.0";
+        viewModel.SelectedRowEditor.A1.SampleSizeText = "8";
+
+        await viewModel.SaveCommand.ExecuteAsync(null);
+
+        Assert.Equal("Wedge references saved.", viewModel.StatusMessage);
+        Assert.Single(repository.SavedReferences);
+        Assert.Equal("A1", repository.SavedReferences[0].SwingLabel);
+        Assert.True(repository.SavedReferences[0].IsManualOverride);
+        Assert.Equal(60m, repository.SavedReferences[0].TargetDistance!.Value.Yards);
+        Assert.Equal("60 yd", viewModel.Rows[0].A1.TargetDistanceText);
+        Assert.True(viewModel.Rows[0].A1.IsManualOverride);
+    }
+
     private static WedgeMatrixViewModel CreateViewModel(
         Guid golferProfileId,
         IReadOnlyList<ClubSummary> clubs,
@@ -68,6 +115,17 @@ public class WedgeMatrixViewModelTests
         return new WedgeMatrixViewModel(
             new TestClubRepository(clubs),
             new TestWedgeSwingReferenceRepository(references),
+            golferProfileId: golferProfileId);
+    }
+
+    private static WedgeMatrixViewModel CreateViewModel(
+        Guid golferProfileId,
+        IReadOnlyList<ClubSummary> clubs,
+        MutableWedgeSwingReferenceRepository repository)
+    {
+        return new WedgeMatrixViewModel(
+            new TestClubRepository(clubs),
+            repository,
             golferProfileId: golferProfileId);
     }
 
@@ -82,6 +140,17 @@ public class WedgeMatrixViewModelTests
         decimal averageCarryYards,
         decimal standardDeviationYards,
         int sampleSize) =>
+        CreateReference(golferProfileId, clubId, setupLabel, targetDistanceYards, averageCarryYards, standardDeviationYards, sampleSize, isManualOverride: false);
+
+    private static WedgeSwingReference CreateReference(
+        Guid golferProfileId,
+        Guid clubId,
+        string setupLabel,
+        decimal targetDistanceYards,
+        decimal averageCarryYards,
+        decimal standardDeviationYards,
+        int sampleSize,
+        bool isManualOverride) =>
         new()
         {
             Id = Guid.NewGuid(),
@@ -94,7 +163,7 @@ public class WedgeMatrixViewModelTests
             AverageCarry = Distance.FromYards(averageCarryYards),
             CarryStandardDeviation = Distance.FromYards(standardDeviationYards),
             SampleSize = sampleSize,
-            IsManualOverride = false,
+            IsManualOverride = isManualOverride,
             UpdatedAt = DateTimeOffset.Parse("2026-07-20T10:00:00Z", CultureInfo.InvariantCulture),
         };
 
@@ -128,6 +197,39 @@ public class WedgeMatrixViewModelTests
         {
             return Task.FromResult<IReadOnlyList<WedgeSwingReference>>(
                 references.Where(reference => reference.GolferProfileId == golferProfileId).ToList());
+        }
+
+        public Task SaveAsync(WedgeSwingReference reference, CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class MutableWedgeSwingReferenceRepository(IReadOnlyList<WedgeSwingReference> references) : IWedgeSwingReferenceRepository
+    {
+        public List<WedgeSwingReference> References { get; } = references.ToList();
+
+        public List<WedgeSwingReference> SavedReferences { get; } = [];
+
+        public Task<IReadOnlyList<WedgeSwingReference>> SearchAsync(Guid golferProfileId, CancellationToken cancellationToken)
+        {
+            return Task.FromResult<IReadOnlyList<WedgeSwingReference>>(
+                References.Where(reference => reference.GolferProfileId == golferProfileId).ToList());
+        }
+
+        public Task SaveAsync(WedgeSwingReference reference, CancellationToken cancellationToken)
+        {
+            SavedReferences.Add(reference);
+
+            var existingIndex = References.FindIndex(item => item.Id == reference.Id);
+            if (existingIndex >= 0)
+            {
+                References[existingIndex] = reference;
+            }
+            else
+            {
+                References.Add(reference);
+            }
+
+            return Task.CompletedTask;
         }
     }
 }
