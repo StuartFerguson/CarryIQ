@@ -10,18 +10,21 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly SessionManagerViewModel? _sessionManager;
     private readonly ShotEntryViewModel? _shotEntry;
     private readonly ShotReviewViewModel? _shotReview;
+    private readonly AnalyticsViewModel? _analytics;
 
     public MainWindowViewModel(
         IApplicationPaths applicationPaths,
         ClubManagerViewModel? clubManager = null,
         SessionManagerViewModel? sessionManager = null,
         ShotEntryViewModel? shotEntry = null,
-        ShotReviewViewModel? shotReview = null)
+        ShotReviewViewModel? shotReview = null,
+        AnalyticsViewModel? analytics = null)
     {
         _clubManager = clubManager;
         _sessionManager = sessionManager;
         _shotEntry = shotEntry;
         _shotReview = shotReview;
+        _analytics = analytics;
         ApplicationTitle = "CarryIQ";
         Subtitle = "Local golf analysis foundation";
         DatabasePath = applicationPaths.DatabasePath;
@@ -103,15 +106,17 @@ public sealed partial class MainWindowViewModel : ObservableObject
                 "Club Gapping",
                 "Distance gaps",
                 "Compare clubs and spot distance gaps that need attention.",
-                new PlaceholderScreenViewModel(
-                    "Club Gapping",
-                    "Compare clubs and spot distance gaps that need attention.",
-                    [
-                        "Highlight carry gaps by club and shaft configuration.",
-                        "Make it easy to compare adjacent clubs side by side.",
-                        "Reserve room for charting or tables later in the release.",
-                    ],
-                    "This page will evolve into the gapping analysis workspace.")),
+                analytics is null
+                    ? new PlaceholderScreenViewModel(
+                        "Club Gapping",
+                        "Compare clubs and spot distance gaps that need attention.",
+                        [
+                            "Highlight carry gaps by club and shaft configuration.",
+                            "Make it easy to compare adjacent clubs side by side.",
+                            "Reserve room for charting or tables later in the release.",
+                        ],
+                        "This page will evolve into the gapping analysis workspace.")
+                    : analytics),
             CreateNavigationItem(
                 "Wedge Matrix",
                 "Short game",
@@ -239,6 +244,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
         if (_shotReview is not null)
         {
             await _shotReview.InitializeAsync(cancellationToken);
+        }
+
+        if (_analytics is not null)
+        {
+            await _analytics.InitializeAsync(cancellationToken);
         }
     }
 
