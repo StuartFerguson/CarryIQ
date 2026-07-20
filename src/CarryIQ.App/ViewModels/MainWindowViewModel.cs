@@ -9,16 +9,19 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly ClubManagerViewModel? _clubManager;
     private readonly SessionManagerViewModel? _sessionManager;
     private readonly ShotEntryViewModel? _shotEntry;
+    private readonly ShotReviewViewModel? _shotReview;
 
     public MainWindowViewModel(
         IApplicationPaths applicationPaths,
         ClubManagerViewModel? clubManager = null,
         SessionManagerViewModel? sessionManager = null,
-        ShotEntryViewModel? shotEntry = null)
+        ShotEntryViewModel? shotEntry = null,
+        ShotReviewViewModel? shotReview = null)
     {
         _clubManager = clubManager;
         _sessionManager = sessionManager;
         _shotEntry = shotEntry;
+        _shotReview = shotReview;
         ApplicationTitle = "CarryIQ";
         Subtitle = "Local golf analysis foundation";
         DatabasePath = applicationPaths.DatabasePath;
@@ -68,6 +71,21 @@ public sealed partial class MainWindowViewModel : ObservableObject
                         ],
                         "This screen will support the manual shot workflow.")
                     : shotEntry),
+            CreateNavigationItem(
+                "Shot Review",
+                "Review and correct",
+                "Inspect recent shots, fix mistakes, and bulk-apply corrections.",
+                shotReview is null
+                    ? new PlaceholderScreenViewModel(
+                        "Shot Review",
+                        "Inspect recent shots, fix mistakes, and bulk-apply corrections.",
+                        [
+                            "Show a searchable list of recent shots in a master-detail layout.",
+                            "Allow bulk include, exclude, club, and swing-type corrections.",
+                            "Keep raw import payloads visible for traceability.",
+                        ],
+                        "This review workspace supports phase 2 of the shot workflow.")
+                    : shotReview),
             CreateNavigationItem(
                 "Imports",
                 "Bring data in",
@@ -216,6 +234,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
         if (_shotEntry is not null)
         {
             await _shotEntry.InitializeAsync(cancellationToken);
+        }
+
+        if (_shotReview is not null)
+        {
+            await _shotReview.InitializeAsync(cancellationToken);
         }
     }
 

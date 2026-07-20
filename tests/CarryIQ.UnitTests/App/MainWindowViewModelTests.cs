@@ -13,7 +13,7 @@ public class MainWindowViewModelTests
         Assert.Equal("CarryIQ", viewModel.ApplicationTitle);
         Assert.Equal("Dashboard", viewModel.SelectedNavigationItem?.Title);
         Assert.Equal("Dashboard", viewModel.CurrentScreen?.Title);
-        Assert.Equal(11, viewModel.NavigationItems.Count);
+        Assert.Equal(12, viewModel.NavigationItems.Count);
     }
 
     [Fact]
@@ -21,7 +21,7 @@ public class MainWindowViewModelTests
     {
         var viewModel = new MainWindowViewModel(new TestApplicationPaths());
 
-        viewModel.SelectedNavigationItem = viewModel.NavigationItems[4];
+        viewModel.SelectedNavigationItem = viewModel.NavigationItems[5];
 
         Assert.Equal("Club Gapping", viewModel.SelectedNavigationItem?.Title);
         Assert.Equal("Club Gapping", viewModel.CurrentScreen?.Title);

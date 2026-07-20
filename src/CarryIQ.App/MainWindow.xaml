@@ -78,6 +78,10 @@
             <local:ShotEntryView />
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type local:ShotReviewViewModel}">
+            <local:ShotReviewView />
+        </DataTemplate>
+
         <Style x:Key="ShellNavItemStyle" TargetType="{x:Type ListBoxItem}">
             <Setter Property="Foreground" Value="{StaticResource ShellTextBrush}" />
             <Setter Property="Margin" Value="0,0,0,10" />

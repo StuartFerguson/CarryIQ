@@ -21,6 +21,7 @@ public static class AppHost
                 services.AddSingleton<ClubManagerViewModel>();
                 services.AddSingleton<SessionManagerViewModel>();
                 services.AddSingleton<ShotEntryViewModel>();
+                services.AddSingleton<ShotReviewViewModel>();
                 services.AddSingleton<MainWindowViewModel>();
                 services.AddSingleton<MainWindow>();
             })
