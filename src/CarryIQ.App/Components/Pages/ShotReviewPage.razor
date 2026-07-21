@@ -1,13 +1,204 @@
+@using System.Globalization
+
 <PageCard>
     <SectionHeader Title="@ViewModel.Title"
                    Summary="@ViewModel.Summary" />
 
-    <div class="placeholder-footer">
-        Shot review will be filled out in the workflow port.
+    <div class="screen-stack">
+        <div class="toolbar">
+            <button class="action-button" type="button" @onclick="RefreshAsync">Refresh</button>
+            <button class="action-button" type="button" @onclick="IncludeSelectedAsync">Include selected</button>
+            <button class="action-button" type="button" @onclick="ExcludeSelectedAsync">Exclude selected</button>
+            <button class="action-button" type="button" @onclick="ApplyClubAsync">Apply club</button>
+            <button class="action-button" type="button" @onclick="ApplySwingTypeAsync">Apply swing type</button>
+        </div>
+
+        <EditForm Model="@ViewModel">
+            <div class="field-grid">
+                <label class="field">
+                    <span>Session</span>
+                    <select class="field-input" value="@SelectedSessionValue" @onchange="OnSessionChanged">
+                        <option value="">Choose a session</option>
+                        @foreach (var session in ViewModel.Sessions)
+                        {
+                            <option value="@session.Id">@session.Name (@session.SessionDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))</option>
+                        }
+                    </select>
+                </label>
+                <label class="field">
+                    <span>Search</span>
+                    <InputText class="field-input" @bind-Value="ViewModel.SearchText" />
+                </label>
+                <label class="field">
+                    <span>Included only</span>
+                    <InputCheckbox class="field-input" @bind-Value="ViewModel.IncludedOnly" />
+                </label>
+            </div>
+        </EditForm>
+
+        <div class="detail-columns">
+            <article class="screen-card">
+                <h3>Shots</h3>
+                <div class="table-shell">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Select</th>
+                                <th>#</th>
+                                <th>Recorded</th>
+                                <th>Club</th>
+                                <th>Carry</th>
+                                <th>Included</th>
+                                <th>Swing</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var shot in ViewModel.Shots)
+                            {
+                                <tr class="@(ViewModel.SelectedShot?.Id == shot.Id ? "selected" : string.Empty)"
+                                    @onclick="() => SelectShot(shot)">
+                                    <td @onclick:stopPropagation="true">
+                                        <input type="checkbox" @bind="shot.IsSelected" />
+                                    </td>
+                                    <td>@shot.ShotSequence</td>
+                                    <td>@shot.RecordedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)</td>
+                                    <td>@shot.ClubName</td>
+                                    <td>@(shot.DisplayCarryDistance is decimal carry ? carry.ToString("0.#", CultureInfo.InvariantCulture) + " yd" : "N/A")</td>
+                                    <td>@shot.InclusionState</td>
+                                    <td>@(shot.SwingType?.ToString() ?? "N/A")</td>
+                                    <td>@(shot.Notes ?? string.Empty)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+
+            <article class="screen-card">
+                <h3>Selected shot</h3>
+                @if (ViewModel.SelectedShot is null)
+                {
+                    <div class="empty-state">Select a shot to inspect or bulk edit it.</div>
+                }
+                else
+                {
+                    <div class="field-grid">
+                        <div class="stat-card"><span class="muted">Club</span><strong>@ViewModel.SelectedShot.ClubName</strong></div>
+                        <div class="stat-card"><span class="muted">Status</span><strong>@ViewModel.SelectedShot.InclusionState</strong></div>
+                        <div class="stat-card"><span class="muted">Swing type</span><strong>@(ViewModel.SelectedShot.SwingType?.ToString() ?? "N/A")</strong></div>
+                        <div class="stat-card"><span class="muted">Carry</span><strong>@(ViewModel.SelectedShot.DisplayCarryDistance is decimal carry ? carry.ToString("0.#", CultureInfo.InvariantCulture) + " yd" : "N/A")</strong></div>
+                    </div>
+                    <div class="field">
+                        <span>Notes</span>
+                        <div class="status-box">@(ViewModel.SelectedShot.Notes ?? "No notes")</div>
+                    </div>
+                    <div class="field">
+                        <span>Raw data</span>
+                        <div class="status-box">@((ViewModel.SelectedShot.RawImportData ?? "No raw import data"))</div>
+                    </div>
+                }
+
+                <div class="field-grid">
+                    <label class="field">
+                        <span>Apply club</span>
+                        <select class="field-input" value="@SelectedClubValue" @onchange="OnClubSelectChanged">
+                            <option value="">Choose a club</option>
+                            @foreach (var club in ViewModel.Clubs)
+                            {
+                                <option value="@club.Id">@club.Name</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span>Apply swing type</span>
+                        <select class="field-input" value="@SelectedSwingTypeValue" @onchange="OnSwingTypeChanged">
+                            @foreach (var option in ViewModel.SwingTypeOptions)
+                            {
+                                <option value="@(option.Value?.ToString() ?? string.Empty)">@option.DisplayText</option>
+                            }
+                        </select>
+                    </label>
+                </div>
+            </article>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(ViewModel.StatusMessage))
+        {
+            <div class="status-box">@ViewModel.StatusMessage</div>
+        }
+
+        <div class="muted">@ViewModel.Footer</div>
     </div>
 </PageCard>
 
 @code {
     [Parameter, EditorRequired]
     public ShotReviewViewModel ViewModel { get; set; } = default!;
+
+    private string SelectedSessionValue => ViewModel.SelectedSessionId?.ToString() ?? string.Empty;
+
+    private string SelectedClubValue => ViewModel.SelectedClubId?.ToString() ?? string.Empty;
+
+    private string SelectedSwingTypeValue => ViewModel.SelectedSwingType?.ToString() ?? string.Empty;
+
+    private async Task RefreshAsync()
+    {
+        await ViewModel.RefreshCommand.ExecuteAsync(null);
+    }
+
+    private async Task IncludeSelectedAsync()
+    {
+        await ViewModel.IncludeSelectedCommand.ExecuteAsync(null);
+    }
+
+    private async Task ExcludeSelectedAsync()
+    {
+        await ViewModel.ExcludeSelectedCommand.ExecuteAsync(null);
+    }
+
+    private async Task ApplyClubAsync()
+    {
+        await ViewModel.ApplyClubCommand.ExecuteAsync(null);
+    }
+
+    private async Task ApplySwingTypeAsync()
+    {
+        await ViewModel.ApplySwingTypeCommand.ExecuteAsync(null);
+    }
+
+    private async Task OnSessionChanged(ChangeEventArgs args)
+    {
+        ViewModel.SelectedSessionId = ParseGuid(args.Value);
+        await ViewModel.RefreshCommand.ExecuteAsync(null);
+    }
+
+    private Task OnClubSelectChanged(ChangeEventArgs args)
+    {
+        ViewModel.SelectedClubId = ParseGuid(args.Value);
+        return Task.CompletedTask;
+    }
+
+    private Task OnSwingTypeChanged(ChangeEventArgs args)
+    {
+        ViewModel.SelectedSwingType = ParseSwingType(args.Value);
+        return Task.CompletedTask;
+    }
+
+    private void SelectShot(ShotReviewRowViewModel shot)
+    {
+        ViewModel.SelectedShot = shot;
+    }
+
+    private static Guid? ParseGuid(object? value)
+    {
+        var text = Convert.ToString(value, CultureInfo.InvariantCulture);
+        return Guid.TryParse(text, out var id) ? id : null;
+    }
+
+    private static SwingType? ParseSwingType(object? value)
+    {
+        var text = Convert.ToString(value, CultureInfo.InvariantCulture);
+        return Enum.TryParse<SwingType>(text, out var swingType) ? swingType : null;
+    }
 }

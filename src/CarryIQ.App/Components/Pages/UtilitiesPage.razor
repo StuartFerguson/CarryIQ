@@ -1,13 +1,68 @@
 <PageCard>
-    <SectionHeader Title="@ViewModel.Title"
-                   Summary="@ViewModel.Summary" />
+    <div class="screen-stack">
+        <section>
+            <h2 class="screen-title">@ViewModel.Title</h2>
+            <p class="screen-summary">@ViewModel.Summary</p>
+        </section>
 
-    <div class="placeholder-footer">
-        Utilities actions will be expanded in the workflow port.
+        <EditForm Model="ViewModel">
+            <div class="screen-stack">
+                <section class="screen-card" style="padding: 18px;">
+                    <h3 class="screen-title" style="font-size: 1.3rem;">Seed demo data</h3>
+                    <p class="screen-summary">
+                        Generate practice sessions and shots for local dashboard testing. If the bag is empty,
+                        the utility creates a starter set of clubs first.
+                    </p>
+
+                    <div class="field-grid" style="margin-top: 18px;">
+                        <div class="field">
+                            <label for="session-count">Session count</label>
+                            <InputText id="session-count" @bind-Value="ViewModel.SessionCountText" />
+                        </div>
+                        <div class="field">
+                            <label for="week-span">Weeks</label>
+                            <InputText id="week-span" @bind-Value="ViewModel.WeekSpanText" />
+                        </div>
+                    </div>
+
+                    <div class="action-row" style="margin-top: 16px;">
+                        <button type="button"
+                                class="action-button primary"
+                                @onclick="SeedDemoDataAsync">
+                            Seed demo data
+                        </button>
+                    </div>
+
+                    <div class="status-box" style="margin-top: 18px;">
+                        <div style="font-weight: 700;">Status</div>
+                        <div style="margin-top: 6px;">@ViewModel.StatusMessage</div>
+                        @if (!string.IsNullOrWhiteSpace(ViewModel.ErrorMessage))
+                        {
+                            <div class="error-text" style="margin-top: 8px;">@ViewModel.ErrorMessage</div>
+                        }
+                    </div>
+                </section>
+            </div>
+        </EditForm>
+
+        <section class="screen-card" style="padding: 18px;">
+            <h3 class="screen-title" style="font-size: 1.3rem;">Future tools</h3>
+            <p class="screen-summary">
+                This page is the home for local maintenance actions, dataset generators, and other developer shortcuts.
+            </p>
+        </section>
+
+        <p class="screen-summary">@ViewModel.Footer</p>
     </div>
 </PageCard>
 
 @code {
     [Parameter, EditorRequired]
     public UtilitiesViewModel ViewModel { get; set; } = default!;
+
+    private async Task SeedDemoDataAsync()
+    {
+        await ViewModel.SeedDemoDataCommand.ExecuteAsync(null);
+        await InvokeAsync(StateHasChanged);
+    }
 }

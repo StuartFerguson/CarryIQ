@@ -1,13 +1,98 @@
+@using System.Globalization
+
 <PageCard>
     <SectionHeader Title="@ViewModel.Title"
                    Summary="@ViewModel.Summary" />
 
-    <div class="placeholder-footer">
-        Shot entry will be filled out in the workflow port.
+    <div class="screen-stack">
+        <EditForm Model="@ViewModel">
+            <div class="detail-columns">
+                <article class="screen-card">
+                    <h3>Shot details</h3>
+                    <div class="field-grid">
+                        <label class="field">
+                            <span>Practice session</span>
+                            <select class="field-input"
+                                    value="@SelectedSessionValue"
+                                    @onchange="OnSessionChanged">
+                                <option value="">Choose a session</option>
+                                @foreach (var session in ViewModel.Sessions)
+                                {
+                                    <option value="@session.Id">@session.Name (@session.SessionDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))</option>
+                                }
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>Club</span>
+                            <select class="field-input"
+                                    value="@SelectedClubValue"
+                                    @onchange="OnClubChanged">
+                                <option value="">Choose a club</option>
+                                @foreach (var club in ViewModel.Clubs)
+                                {
+                                    <option value="@club.Id">@club.Name</option>
+                                }
+                            </select>
+                        </label>
+                        <label class="field"><span>Carry distance (yd)</span><InputText class="field-input" @bind-Value="ViewModel.CarryDistanceText" /></label>
+                        <label class="field"><span>Total distance (yd)</span><InputText class="field-input" @bind-Value="ViewModel.TotalDistanceText" /></label>
+                        <label class="field"><span>Ball speed (mph)</span><InputText class="field-input" @bind-Value="ViewModel.BallSpeedText" /></label>
+                        <label class="field"><span>Club speed (mph)</span><InputText class="field-input" @bind-Value="ViewModel.ClubSpeedText" /></label>
+                        <label class="field"><span>Launch angle</span><InputText class="field-input" @bind-Value="ViewModel.LaunchAngleText" /></label>
+                        <label class="field"><span>Launch direction</span><InputText class="field-input" @bind-Value="ViewModel.LaunchDirectionText" /></label>
+                    </div>
+                    <label class="field">
+                        <span>Notes</span>
+                        <InputTextArea class="field-input" @bind-Value="ViewModel.Notes" />
+                    </label>
+                    <div class="action-row">
+                        <button class="action-button" type="button" @onclick="SaveShotAsync" disabled="@(!ViewModel.SaveCommand.CanExecute(null))">Save shot</button>
+                    </div>
+                </article>
+
+                <article class="screen-card">
+                    <h3>Current status</h3>
+                    @if (!string.IsNullOrWhiteSpace(ViewModel.StatusMessage))
+                    {
+                        <div class="status-box">@ViewModel.StatusMessage</div>
+                    }
+                    <div class="muted">The last club selection is remembered for faster entry on the next shot.</div>
+                </article>
+            </div>
+        </EditForm>
+
+        <div class="muted">@ViewModel.Footer</div>
     </div>
 </PageCard>
 
 @code {
     [Parameter, EditorRequired]
     public ShotEntryViewModel ViewModel { get; set; } = default!;
+
+    private string SelectedClubValue => ViewModel.SelectedClubId?.ToString() ?? string.Empty;
+
+    private string SelectedSessionValue => ViewModel.SelectedSessionId?.ToString() ?? string.Empty;
+
+    private Task OnClubChanged(ChangeEventArgs args)
+    {
+        ViewModel.SelectedClubId = ParseGuid(args.Value);
+        return Task.CompletedTask;
+    }
+
+    private Task OnSessionChanged(ChangeEventArgs args)
+    {
+        ViewModel.SelectedSessionId = ParseGuid(args.Value);
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveShotAsync()
+    {
+        await ViewModel.SaveCommand.ExecuteAsync(null);
+    }
+
+    private static Guid? ParseGuid(object? value)
+    {
+        var text = Convert.ToString(value, CultureInfo.InvariantCulture);
+        return Guid.TryParse(text, out var id) ? id : null;
+    }
 }

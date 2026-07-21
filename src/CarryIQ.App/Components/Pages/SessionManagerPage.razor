@@ -1,13 +1,270 @@
 <PageCard>
-    <SectionHeader Title="@ViewModel.Title"
-                   Summary="@ViewModel.Summary" />
+    <div class="screen-stack">
+        <section>
+            <h2 class="screen-title">@ViewModel.Title</h2>
+            <p class="screen-summary">@ViewModel.Summary</p>
+        </section>
 
-    <div class="placeholder-footer">
-        Session management will be filled out in the workflow port.
+        <EditForm Model="ViewModel">
+            <div class="screen-card" style="padding: 18px;">
+                <div class="field-grid">
+                    <div class="field">
+                        <label for="search">Search</label>
+                        <InputText id="search" @bind-Value="ViewModel.SearchText" />
+                    </div>
+                    <div class="field">
+                        <label for="golfer">Golfer</label>
+                        <InputSelect id="golfer" @bind-Value="ViewModel.SelectedGolferProfileId">
+                            @foreach (var item in ViewModel.GolferProfiles)
+                            {
+                                <option value="@item.Value">@item.DisplayText</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="field">
+                        <label for="session-type">Type</label>
+                        <InputSelect id="session-type" @bind-Value="ViewModel.SelectedSessionType">
+                            @foreach (var item in ViewModel.SessionTypeOptions)
+                            {
+                                <option value="@item.Value">@item.DisplayText</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="field">
+                        <label for="archive">Archive</label>
+                        <InputSelect id="archive" @bind-Value="ViewModel.SelectedArchived">
+                            @foreach (var item in ViewModel.ArchiveOptions)
+                            {
+                                <option value="@item.Value">@item.DisplayText</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="field">
+                        <label for="source">Source</label>
+                        <InputText id="source" @bind-Value="ViewModel.LaunchMonitorSourceFilter" />
+                    </div>
+                    <div class="field">
+                        <label for="from">From</label>
+                        <InputDate id="from" @bind-Value="ViewModel.StartDate" />
+                    </div>
+                    <div class="field">
+                        <label for="to">To</label>
+                        <InputDate id="to" @bind-Value="ViewModel.EndDate" />
+                    </div>
+                </div>
+
+                <div class="action-row" style="margin-top: 12px;">
+                    <button type="button" class="action-button primary" @onclick="NewSessionAsync">New</button>
+                    <button type="button" class="action-button" @onclick="SaveSessionAsync">Save</button>
+                    <button type="button" class="action-button" @onclick="DuplicateSessionAsync">Duplicate</button>
+                    <button type="button" class="action-button warning" @onclick="ToggleArchiveAsync">@ViewModel.ArchiveButtonText</button>
+                    <button type="button" class="action-button warning" @onclick="DeleteSessionAsync">Delete</button>
+                    <button type="button" class="action-button" @onclick="RefreshAsync">Refresh</button>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(ViewModel.ErrorMessage))
+                {
+                    <div class="error-text" style="margin-top: 10px;">@ViewModel.ErrorMessage</div>
+                }
+            </div>
+        </EditForm>
+
+        <div class="table-shell">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Location</th>
+                        <th>Duration</th>
+                        <th>Shots</th>
+                        <th>Valid</th>
+                        <th>Source</th>
+                        <th>Archived</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var session in ViewModel.Sessions)
+                    {
+                        <tr class="clickable @(IsSelected(session) ? "selected" : string.Empty)"
+                            @onclick="() => SelectSessionAsync(session.Id)">
+                            <td>@session.SessionDate.ToString("yyyy-MM-dd")</td>
+                            <td>@session.Name</td>
+                            <td>@session.SessionType</td>
+                            <td>@session.DisplayLocationName</td>
+                            <td>@session.DisplayDuration</td>
+                            <td>@session.ShotCount</td>
+                            <td>@session.ValidShotCount</td>
+                            <td>@session.DisplayLaunchMonitorSource</td>
+                            <td>@session.IsArchived</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <section class="screen-card">
+            <EditForm Model="ViewModel.Editor">
+                <div class="screen-stack">
+                    <section>
+                        <h2 class="screen-title">Edit session</h2>
+                        <p class="screen-summary">
+                            Use the detail pane to update the selected session, duplicate it, or archive it for later.
+                        </p>
+                    </section>
+
+                    <div class="status-box">
+                        <div style="font-weight: 700;">Validation</div>
+                        <div style="margin-top: 6px; white-space: pre-line;">@ViewModel.Editor.ValidationMessage</div>
+                    </div>
+
+                    <div class="field-grid">
+                        <div class="field">
+                            <label for="session-name">Name</label>
+                            <InputText id="session-name" @bind-Value="ViewModel.Editor.Name" />
+                        </div>
+                        <div class="field">
+                            <label for="session-date">Date</label>
+                            <InputDate id="session-date" @bind-Value="ViewModel.Editor.SessionDate" />
+                        </div>
+                        <div class="field">
+                            <label for="start-time">Start time</label>
+                            <InputSelect id="start-time" @bind-Value="ViewModel.Editor.StartTime">
+                                <option value="">-</option>
+                                @foreach (var time in ViewModel.Editor.TimeOptions)
+                                {
+                                    <option value="@time">@time.ToString("HH:mm")</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="field">
+                            <label for="end-time">End time</label>
+                            <InputSelect id="end-time" @bind-Value="ViewModel.Editor.EndTime">
+                                <option value="">-</option>
+                                @foreach (var time in ViewModel.Editor.TimeOptions)
+                                {
+                                    <option value="@time">@time.ToString("HH:mm")</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="field">
+                            <label for="session-type-edit">Session type</label>
+                            <InputSelect id="session-type-edit" @bind-Value="ViewModel.Editor.SessionType">
+                                @foreach (var item in ViewModel.Editor.SessionTypes)
+                                {
+                                    <option value="@item">@item</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="field">
+                            <label for="surface">Surface</label>
+                            <InputSelect id="surface" @bind-Value="ViewModel.Editor.SurfaceType">
+                                @foreach (var item in ViewModel.Editor.SurfaceTypes)
+                                {
+                                    <option value="@item">@item</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="field">
+                            <label for="location">Location</label>
+                            <InputText id="location" @bind-Value="ViewModel.Editor.LocationName" />
+                        </div>
+                        <div class="field">
+                            <label for="monitor">Launch monitor source</label>
+                            <InputText id="monitor" @bind-Value="ViewModel.Editor.LaunchMonitorSource" />
+                        </div>
+                        <div class="field">
+                            <label for="ball">Ball type</label>
+                            <InputText id="ball" @bind-Value="ViewModel.Editor.BallType" />
+                        </div>
+                        <div class="field">
+                            <label for="weather">Weather</label>
+                            <InputText id="weather" @bind-Value="ViewModel.Editor.WeatherDescription" />
+                        </div>
+                        <div class="field">
+                            <label for="temp">Temperature C</label>
+                            <InputNumber id="temp" @bind-Value="ViewModel.Editor.TemperatureCelsius" />
+                        </div>
+                        <div class="field">
+                            <label for="wind-speed">Wind speed mph</label>
+                            <InputNumber id="wind-speed" @bind-Value="ViewModel.Editor.WindSpeedMilesPerHour" />
+                        </div>
+                        <div class="field">
+                            <label for="wind-dir">Wind direction</label>
+                            <InputText id="wind-dir" @bind-Value="ViewModel.Editor.WindDirection" />
+                        </div>
+                        <div class="field">
+                            <label for="elevation">Elevation metres</label>
+                            <InputNumber id="elevation" @bind-Value="ViewModel.Editor.ElevationMetres" />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="session-notes">Notes</label>
+                        <InputTextArea id="session-notes" @bind-Value="ViewModel.Editor.Notes" />
+                    </div>
+
+                    <div class="action-row">
+                        <label class="stacked-label" style="align-items: center; display: flex; gap: 8px;">
+                            <InputCheckbox @bind-Value="ViewModel.Editor.IsArchived" />
+                            <span>Archived</span>
+                        </label>
+                        <div class="muted">Created: @ViewModel.Editor.CreatedAt.ToString("u")</div>
+                        <div class="muted">Updated: @ViewModel.Editor.UpdatedAt.ToString("u")</div>
+                    </div>
+                </div>
+            </EditForm>
+        </section>
     </div>
 </PageCard>
 
 @code {
     [Parameter, EditorRequired]
     public SessionManagerViewModel ViewModel { get; set; } = default!;
+
+    private bool IsSelected(PracticeSessionSummary session) =>
+        ViewModel.SelectedSession?.Id == session.Id;
+
+    private async Task RefreshAsync()
+    {
+        await ViewModel.RefreshCommand.ExecuteAsync(null);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task NewSessionAsync()
+    {
+        await ViewModel.NewCommand.ExecuteAsync(null);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SaveSessionAsync()
+    {
+        await ViewModel.SaveCommand.ExecuteAsync(null);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task DuplicateSessionAsync()
+    {
+        await ViewModel.DuplicateCommand.ExecuteAsync(null);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ToggleArchiveAsync()
+    {
+        await ViewModel.ArchiveCommand.ExecuteAsync(null);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task DeleteSessionAsync()
+    {
+        await ViewModel.DeleteCommand.ExecuteAsync(null);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SelectSessionAsync(Guid sessionId)
+    {
+        await ViewModel.SelectSessionAsync(sessionId);
+        await InvokeAsync(StateHasChanged);
+    }
 }

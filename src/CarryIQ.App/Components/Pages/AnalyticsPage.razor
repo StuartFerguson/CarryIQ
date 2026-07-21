@@ -1,13 +1,154 @@
+@using System.Globalization
+
 <PageCard>
     <SectionHeader Title="@ViewModel.Title"
                    Summary="@ViewModel.Summary" />
 
-    <div class="placeholder-footer">
-        Analytics will be filled out in the workflow port.
+    <div class="screen-stack">
+        <div class="toolbar">
+            <button class="action-button" type="button" @onclick="RefreshAsync">Refresh</button>
+            <label class="field">
+                <span>Gap mode</span>
+                <select class="field-input"
+                        value="@ViewModel.SelectedGapOption.ToString()"
+                        @onchange="OnGapModeChanged">
+                    @foreach (var option in ViewModel.GapOptions)
+                    {
+                        <option value="@(option.Value?.ToString() ?? string.Empty)">@option.DisplayText</option>
+                    }
+                </select>
+            </label>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(ViewModel.StatusMessage) || !string.IsNullOrWhiteSpace(ViewModel.ErrorMessage))
+        {
+            <div class="status-box">
+                @if (!string.IsNullOrWhiteSpace(ViewModel.StatusMessage))
+                {
+                    <div>@ViewModel.StatusMessage</div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(ViewModel.ErrorMessage))
+                {
+                    <div class="error-text">@ViewModel.ErrorMessage</div>
+                }
+            </div>
+        }
+
+        <div class="card-grid">
+            <article class="stat-card">
+                <span class="muted">Club rows</span>
+                <strong>@ViewModel.Rows.Count</strong>
+            </article>
+            <article class="stat-card">
+                <span class="muted">Selected row</span>
+                <strong>@(ViewModel.SelectedRow?.ClubName ?? "None")</strong>
+            </article>
+            <article class="stat-card">
+                <span class="muted">Samples</span>
+                <strong>@(ViewModel.SelectedRow?.SampleCount.ToString(CultureInfo.InvariantCulture) ?? "0")</strong>
+            </article>
+        </div>
+
+        <div class="table-shell">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Club</th>
+                        <th>Type</th>
+                        <th>Samples</th>
+                        <th>Mean</th>
+                        <th>Median</th>
+                        <th>Representative</th>
+                        <th>Range</th>
+                        <th>SD</th>
+                        <th>Consistency</th>
+                        <th>Gap</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in ViewModel.Rows)
+                    {
+                        <tr class="@(ViewModel.SelectedRow?.ClubId == row.ClubId ? "selected" : string.Empty)"
+                            @onclick="() => SelectRow(row)">
+                            <td>@row.ClubName</td>
+                            <td>@row.ClubType</td>
+                            <td>@row.SampleCount</td>
+                            <td>@row.MeanCarryYards.ToString("0.#", CultureInfo.InvariantCulture)</td>
+                            <td>@row.MedianCarryYards.ToString("0.#", CultureInfo.InvariantCulture)</td>
+                            <td>@row.RepresentativeCarryYards.ToString("0.#", CultureInfo.InvariantCulture)</td>
+                            <td>@row.CarryRangeYards.ToString("0.#", CultureInfo.InvariantCulture)</td>
+                            <td>@row.StandardDeviationYards.ToString("0.#", CultureInfo.InvariantCulture)</td>
+                            <td>@row.ConsistencyScore.ToString("0.#", CultureInfo.InvariantCulture)</td>
+                            <td>@(row.GapToNextYards is decimal gap ? gap.ToString("0.#", CultureInfo.InvariantCulture) + " yd" : "N/A")</td>
+                            <td>@row.GapStatusText</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (ViewModel.SelectedRow is not null)
+        {
+            <div class="detail-columns">
+                <article class="screen-card">
+                    <h3>@ViewModel.SelectedRow.ClubName</h3>
+                    <p class="muted">@ViewModel.SelectedRow.ClubType</p>
+                    <div class="metric-grid">
+                        <div class="stat-card">
+                            <span class="muted">Mean carry</span>
+                            <strong>@ViewModel.SelectedRow.MeanCarryYards.ToString("0.#", CultureInfo.InvariantCulture) yd</strong>
+                        </div>
+                        <div class="stat-card">
+                            <span class="muted">Median carry</span>
+                            <strong>@ViewModel.SelectedRow.MedianCarryYards.ToString("0.#", CultureInfo.InvariantCulture) yd</strong>
+                        </div>
+                        <div class="stat-card">
+                            <span class="muted">Range</span>
+                            <strong>@ViewModel.SelectedRow.CarryRangeYards.ToString("0.#", CultureInfo.InvariantCulture) yd</strong>
+                        </div>
+                        <div class="stat-card">
+                            <span class="muted">Consistency</span>
+                            <strong>@ViewModel.SelectedRow.ConsistencyScore.ToString("0.#", CultureInfo.InvariantCulture)</strong>
+                        </div>
+                    </div>
+                    <div class="status-box">
+                        <div>@ViewModel.SelectedRow.GapStatusText</div>
+                        @if (ViewModel.SelectedRow.HasInsufficientSamples)
+                        {
+                            <div class="muted">@ViewModel.SelectedRow.SampleWarningText</div>
+                        }
+                    </div>
+                </article>
+            </div>
+        }
+
+        <div class="muted">@ViewModel.Footer</div>
     </div>
 </PageCard>
 
 @code {
     [Parameter, EditorRequired]
     public AnalyticsViewModel ViewModel { get; set; } = default!;
+
+    private async Task RefreshAsync()
+    {
+        await ViewModel.RefreshCommand.ExecuteAsync(null);
+    }
+
+    private async Task OnGapModeChanged(ChangeEventArgs args)
+    {
+        var text = Convert.ToString(args.Value, CultureInfo.InvariantCulture);
+        if (!string.IsNullOrWhiteSpace(text) && Enum.TryParse<ClubGapOption>(text, out var selected))
+        {
+            ViewModel.SelectedGapOption = selected;
+            await ViewModel.RefreshCommand.ExecuteAsync(null);
+        }
+    }
+
+    private void SelectRow(AnalyticsClubRowViewModel row)
+    {
+        ViewModel.SelectedRow = row;
+    }
 }

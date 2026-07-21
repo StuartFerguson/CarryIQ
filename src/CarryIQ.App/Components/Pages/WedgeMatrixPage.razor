@@ -1,13 +1,120 @@
+@using System.Globalization
+
 <PageCard>
     <SectionHeader Title="@ViewModel.Title"
                    Summary="@ViewModel.Summary" />
 
-    <div class="placeholder-footer">
-        Wedge matrix will be filled out in the workflow port.
+    <div class="screen-stack">
+        <div class="toolbar">
+            <label class="field">
+                <span>Include inactive</span>
+                <input type="checkbox" @bind="ViewModel.IncludeInactive" />
+            </label>
+            <button class="action-button" type="button" @onclick="RefreshAsync">Refresh</button>
+            <button class="action-button" type="button" @onclick="SaveAsync" disabled="@(!ViewModel.SaveCommand.CanExecute(null))">Save references</button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(ViewModel.StatusMessage) || !string.IsNullOrWhiteSpace(ViewModel.ErrorMessage))
+        {
+            <div class="status-box">
+                @if (!string.IsNullOrWhiteSpace(ViewModel.StatusMessage))
+                {
+                    <div>@ViewModel.StatusMessage</div>
+                }
+                @if (!string.IsNullOrWhiteSpace(ViewModel.ErrorMessage))
+                {
+                    <div class="error-text">@ViewModel.ErrorMessage</div>
+                }
+            </div>
+        }
+
+        <div class="detail-columns">
+            <article class="screen-card">
+                <h3>Wedge matrix</h3>
+                <div class="table-shell">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Club</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>A1</th>
+                                <th>A2</th>
+                                <th>A3</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in ViewModel.Rows)
+                            {
+                                <tr class="@(ViewModel.SelectedRow?.ClubId == row.ClubId ? "selected" : string.Empty)"
+                                    @onclick="() => SelectRow(row)">
+                                    <td>@row.ClubName</td>
+                                    <td>@row.ClubType</td>
+                                    <td>@row.StatusText</td>
+                                    <td>@row.A1.SetupLabel: @row.A1.TargetDistanceText</td>
+                                    <td>@row.A2.SetupLabel: @row.A2.TargetDistanceText</td>
+                                    <td>@row.A3.SetupLabel: @row.A3.TargetDistanceText</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+
+            <article class="screen-card">
+                <h3>Selected row</h3>
+                @if (ViewModel.SelectedRowEditor is null)
+                {
+                    <div class="empty-state">Pick a wedge club to review or edit its reference cells.</div>
+                }
+                else
+                {
+                    <div class="status-box">
+                        <div><strong>@ViewModel.SelectedRowEditor.ClubName</strong></div>
+                        <div>@ViewModel.SelectedRowEditor.ClubType</div>
+                        <div>@ViewModel.SelectedRowEditor.StatusText</div>
+                    </div>
+
+                    <EditForm Model="@ViewModel.SelectedRowEditor">
+                        <div class="field-grid">
+                            @foreach (var cell in new[] { ViewModel.SelectedRowEditor.A1, ViewModel.SelectedRowEditor.A2, ViewModel.SelectedRowEditor.A3 })
+                            {
+                                <article class="screen-card">
+                                    <h4>@cell.SetupType</h4>
+                                    <div class="field-grid">
+                                        <label class="field"><span>Target distance</span><InputText class="field-input" @bind-Value="cell.TargetDistanceText" /></label>
+                                        <label class="field"><span>Average carry</span><InputText class="field-input" @bind-Value="cell.AverageCarryText" /></label>
+                                        <label class="field"><span>Standard deviation</span><InputText class="field-input" @bind-Value="cell.StandardDeviationText" /></label>
+                                        <label class="field"><span>Sample size</span><InputText class="field-input" @bind-Value="cell.SampleSizeText" /></label>
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    </EditForm>
+                }
+            </article>
+        </div>
+
+        <div class="muted">@ViewModel.Footer</div>
     </div>
 </PageCard>
 
 @code {
     [Parameter, EditorRequired]
     public WedgeMatrixViewModel ViewModel { get; set; } = default!;
+
+    private async Task RefreshAsync()
+    {
+        await ViewModel.RefreshCommand.ExecuteAsync(null);
+    }
+
+    private async Task SaveAsync()
+    {
+        await ViewModel.SaveCommand.ExecuteAsync(null);
+    }
+
+    private void SelectRow(WedgeMatrixRowViewModel row)
+    {
+        ViewModel.SelectedRow = row;
+    }
 }

@@ -1,13 +1,131 @@
-<PageCard>
-    <SectionHeader Title="@ViewModel.Title"
-                   Summary="@ViewModel.Summary" />
+@using System.Globalization
 
-    <div class="placeholder-footer">
-        Dashboard content will be ported into this page in the next task.
+<PageCard>
+    <div class="screen-stack">
+        <section>
+            <h2 class="screen-title">@ViewModel.Title</h2>
+            <p class="screen-summary">@ViewModel.Summary</p>
+        </section>
+
+        <section class="card-grid">
+            @foreach (var card in ViewModel.MetricCards)
+            {
+                <article class="stat-card">
+                    <div class="stat-label">@card.Title</div>
+                    <div class="stat-value">@card.ValueText</div>
+                    @if (!string.IsNullOrWhiteSpace(card.DetailText))
+                    {
+                        <div class="stat-detail">@card.DetailText</div>
+                    }
+                </article>
+            }
+        </section>
+
+        <section class="screen-stack">
+            <div class="action-row">
+                <button type="button"
+                        class="action-button primary"
+                        @onclick="RefreshAsync">
+                    Refresh
+                </button>
+            </div>
+
+            <div class="table-shell">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Name</th>
+                            <th>Shots</th>
+                            <th>Avg carry</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var session in ViewModel.RecentSessions)
+                        {
+                            <tr class="clickable @(IsSelected(session) ? "selected" : string.Empty)"
+                                @onclick="() => SelectSessionAsync(session)">
+                                <td>@session.SessionDateText</td>
+                                <td>@session.Name</td>
+                                <td>@session.ShotCountText</td>
+                                <td>@session.AverageCarryText</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="detail-columns">
+            <article class="screen-card">
+                <h3 class="screen-title" style="font-size: 1.3rem;">Selected session</h3>
+                @if (ViewModel.SelectedSession is null)
+                {
+                    <div class="empty-state">Select a recent session to inspect its carry summary.</div>
+                }
+                else
+                {
+                    <div class="screen-stack">
+                        <div>
+                            <div class="stat-label">@ViewModel.SelectedSession.Name</div>
+                            <div class="screen-summary">@ViewModel.SelectedSession.SessionDateText</div>
+                        </div>
+
+                        <div class="metric-grid">
+                            <article class="stat-card">
+                                <div class="stat-label">Included shots</div>
+                                <div class="stat-value">@ViewModel.SelectedSession.IncludedShotCount</div>
+                            </article>
+                            <article class="stat-card">
+                                <div class="stat-label">Average carry</div>
+                                <div class="stat-value">@ViewModel.SelectedSession.AverageCarryText</div>
+                            </article>
+                            <article class="stat-card">
+                                <div class="stat-label">Total shots</div>
+                                <div class="stat-value">@ViewModel.SelectedSession.TotalShots</div>
+                            </article>
+                            <article class="stat-card">
+                                <div class="stat-label">Inclusion ratio</div>
+                                <div class="stat-value">@ViewModel.SelectedSession.ShotCountText</div>
+                            </article>
+                        </div>
+                    </div>
+                }
+            </article>
+
+            <article class="screen-card">
+                <h3 class="screen-title" style="font-size: 1.3rem;">Notes</h3>
+                <p class="screen-summary">@ViewModel.Footer</p>
+
+                <div class="status-box" style="margin-top: 18px;">
+                    <div style="font-weight: 700;">Status</div>
+                    <div style="margin-top: 6px;">@ViewModel.StatusMessage</div>
+                    @if (!string.IsNullOrWhiteSpace(ViewModel.ErrorMessage))
+                    {
+                        <div class="error-text" style="margin-top: 8px;">@ViewModel.ErrorMessage</div>
+                    }
+                </div>
+            </article>
+        </section>
     </div>
 </PageCard>
 
 @code {
     [Parameter, EditorRequired]
     public DashboardViewModel ViewModel { get; set; } = default!;
+
+    private bool IsSelected(RecentSessionRowViewModel session) =>
+        ViewModel.SelectedSession?.SessionId == session.SessionId;
+
+    private async Task RefreshAsync()
+    {
+        await ViewModel.RefreshCommand.ExecuteAsync(null);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SelectSessionAsync(RecentSessionRowViewModel session)
+    {
+        ViewModel.SelectedSession = session;
+        await InvokeAsync(StateHasChanged);
+    }
 }
