@@ -1,13 +1,187 @@
 <PageCard>
-    <SectionHeader Title="@ViewModel.Title"
-                   Summary="@ViewModel.Summary" />
+    <div class="detail-columns">
+        <article class="screen-card">
+            <div class="screen-stack">
+                <section>
+                    <h2 class="screen-title">@ViewModel.Title</h2>
+                    <p class="screen-summary">@ViewModel.Summary</p>
+                </section>
 
-    <div class="placeholder-footer">
-        Club management will be filled out in the workflow port.
+                <div class="action-row">
+                    <button type="button" class="action-button primary" @onclick="NewClubAsync">New</button>
+                    <button type="button" class="action-button" @onclick="RefreshAsync">Refresh</button>
+                </div>
+
+                <div class="status-box">
+                    <div style="font-weight: 700;">Validation</div>
+                    <div style="margin-top: 6px; white-space: pre-line;">@ViewModel.Editor.ValidationMessage</div>
+                    @if (!string.IsNullOrWhiteSpace(ViewModel.ErrorMessage))
+                    {
+                        <div class="error-text" style="margin-top: 8px;">@ViewModel.ErrorMessage</div>
+                    }
+                </div>
+
+                <div class="table-shell" style="max-height: 65vh;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Club</th>
+                                <th>Type</th>
+                                <th>Order</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var club in ViewModel.Clubs)
+                            {
+                                <tr class="clickable @(IsSelected(club) ? "selected" : string.Empty)"
+                                    @onclick="() => SelectClubAsync(club.Id)">
+                                    <td>@club.Name</td>
+                                    <td>@club.ClubType</td>
+                                    <td>@club.SortOrder</td>
+                                    <td>@(club.IsActive ? "Active" : "Inactive")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </article>
+
+        <article class="screen-card">
+            <EditForm Model="ViewModel.Editor">
+                <div class="screen-stack">
+                    <section>
+                        <h2 class="screen-title">Edit club</h2>
+                        <p class="screen-summary">
+                            Loft is optional. Saving an active club enforces unique names within the bag.
+                        </p>
+                    </section>
+
+                    <div class="status-box">
+                        <div style="font-weight: 700;">Editor status</div>
+                        <div style="margin-top: 6px; white-space: pre-line;">@ViewModel.Editor.ValidationMessage</div>
+                    </div>
+
+                    <div class="field-grid">
+                        <div class="field">
+                            <label for="club-name">Name</label>
+                            <InputText id="club-name" @bind-Value="ViewModel.Editor.Name" />
+                        </div>
+                        <div class="field">
+                            <label for="club-type">Club type</label>
+                            <InputSelect id="club-type" @bind-Value="ViewModel.Editor.ClubType">
+                                @foreach (var item in ViewModel.Editor.ClubTypes)
+                                {
+                                    <option value="@item">@item</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="field">
+                            <label for="loft">Loft</label>
+                            <InputNumber id="loft" @bind-Value="ViewModel.Editor.Loft" />
+                        </div>
+                        <div class="field">
+                            <label for="length">Length (yards)</label>
+                            <InputNumber id="length" @bind-Value="ViewModel.Editor.LengthYards" />
+                        </div>
+                        <div class="field">
+                            <label for="manufacturer">Manufacturer</label>
+                            <InputText id="manufacturer" @bind-Value="ViewModel.Editor.Manufacturer" />
+                        </div>
+                        <div class="field">
+                            <label for="model">Model</label>
+                            <InputText id="model" @bind-Value="ViewModel.Editor.Model" />
+                        </div>
+                        <div class="field">
+                            <label for="shaft">Shaft</label>
+                            <InputText id="shaft" @bind-Value="ViewModel.Editor.Shaft" />
+                        </div>
+                        <div class="field">
+                            <label for="shaft-flex">Shaft flex</label>
+                            <InputText id="shaft-flex" @bind-Value="ViewModel.Editor.ShaftFlex" />
+                        </div>
+                        <div class="field">
+                            <label for="sort-order">Sort order</label>
+                            <InputNumber id="sort-order" @bind-Value="ViewModel.Editor.SortOrder" />
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="club-notes">Notes</label>
+                        <InputTextArea id="club-notes" @bind-Value="ViewModel.Editor.Notes" />
+                    </div>
+
+                    <div class="action-row">
+                        <label class="stacked-label" style="align-items: center; display: flex; gap: 8px;">
+                            <InputCheckbox @bind-Value="ViewModel.Editor.IsActive" />
+                            <span>Active</span>
+                        </label>
+                    </div>
+
+                    <div class="action-row">
+                        <button type="button" class="action-button primary" @onclick="SaveAsync">Save</button>
+                        <button type="button" class="action-button warning" @onclick="DeactivateAsync">Deactivate</button>
+                        <button type="button" class="action-button" @onclick="MoveUpAsync">Move up</button>
+                        <button type="button" class="action-button" @onclick="MoveDownAsync">Move down</button>
+                    </div>
+
+                    <div class="status-box">
+                        <div style="font-weight: 700;">Audit</div>
+                        <div style="margin-top: 6px;">Created: @ViewModel.Editor.CreatedAt.ToString("u")</div>
+                        <div style="margin-top: 4px;">Updated: @ViewModel.Editor.UpdatedAt.ToString("u")</div>
+                    </div>
+                </div>
+            </EditForm>
+        </article>
     </div>
 </PageCard>
 
 @code {
     [Parameter, EditorRequired]
     public ClubManagerViewModel ViewModel { get; set; } = default!;
+
+    private bool IsSelected(ClubSummary club) => ViewModel.SelectedClub?.Id == club.Id;
+
+    private async Task RefreshAsync()
+    {
+        await ViewModel.RefreshCommand.ExecuteAsync(null);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task NewClubAsync()
+    {
+        await ViewModel.NewCommand.ExecuteAsync(null);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SaveAsync()
+    {
+        await ViewModel.SaveCommand.ExecuteAsync(null);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task DeactivateAsync()
+    {
+        await ViewModel.DeactivateCommand.ExecuteAsync(null);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task MoveUpAsync()
+    {
+        await ViewModel.MoveUpCommand.ExecuteAsync(null);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task MoveDownAsync()
+    {
+        await ViewModel.MoveDownCommand.ExecuteAsync(null);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SelectClubAsync(Guid clubId)
+    {
+        await ViewModel.SelectClubAsync(clubId);
+        await InvokeAsync(StateHasChanged);
+    }
 }

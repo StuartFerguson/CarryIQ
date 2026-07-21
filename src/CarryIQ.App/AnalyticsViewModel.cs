@@ -17,7 +17,6 @@ public sealed partial class AnalyticsViewModel : ObservableObject, IShellScreenV
     private ClubGapOption _selectedGapOption = ClubGapOption.Median;
     private string? _statusMessage;
     private string? _errorMessage;
-    private bool _isInitialized;
 
     public AnalyticsViewModel(
         IClubRepository clubRepository,
@@ -47,13 +46,7 @@ public sealed partial class AnalyticsViewModel : ObservableObject, IShellScreenV
         get => _selectedGapOption;
         set
         {
-            if (SetProperty(ref _selectedGapOption, value))
-            {
-                if (_isInitialized)
-                {
-                    _ = RefreshAsync();
-                }
-            }
+            SetProperty(ref _selectedGapOption, value);
         }
     }
 
@@ -80,7 +73,6 @@ public sealed partial class AnalyticsViewModel : ObservableObject, IShellScreenV
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
         await RefreshAsync(cancellationToken);
-        _isInitialized = true;
     }
 
     private async Task RefreshAsync(CancellationToken cancellationToken = default)

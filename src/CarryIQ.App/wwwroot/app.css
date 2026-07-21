@@ -187,6 +187,233 @@ button {
     color: #1d4ed8;
 }
 
+.screen-card {
+    background: #ffffff;
+    color: #102a43;
+    border: 1px solid #d7e2ee;
+    border-radius: 24px;
+    padding: 24px;
+}
+
+.screen-stack {
+    display: grid;
+    gap: 18px;
+}
+
+.screen-title {
+    font-size: 1.65rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.screen-summary {
+    margin: 8px 0 0;
+    color: #52606d;
+}
+
+.toolbar,
+.field-grid,
+.action-row,
+.stats-grid,
+.metric-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.field-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.field {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+
+.field label {
+    color: #334e68;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.field input,
+.field select,
+.field textarea,
+.toolbar input,
+.toolbar select,
+.toolbar textarea,
+.screen-card input,
+.screen-card select,
+.screen-card textarea {
+    width: 100%;
+    border: 1px solid #c9d6e3;
+    border-radius: 12px;
+    padding: 0.65rem 0.85rem;
+    background: #fff;
+    color: #102a43;
+    font: inherit;
+    box-sizing: border-box;
+}
+
+.field textarea,
+.screen-card textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+.action-row {
+    align-items: center;
+}
+
+.action-button {
+    border: 1px solid #c9d6e3;
+    border-radius: 999px;
+    background: #f8fafc;
+    color: #102a43;
+    padding: 0.7rem 1rem;
+    font: inherit;
+}
+
+.action-button.primary {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    color: #fff;
+}
+
+.action-button.warning {
+    background: #fff7ed;
+    border-color: #fdba74;
+    color: #9a3412;
+}
+
+.action-button:disabled {
+    opacity: 0.55;
+}
+
+.status-box {
+    border-radius: 16px;
+    padding: 14px 16px;
+    background: #eef6ff;
+    border: 1px solid #cfe3ff;
+    color: #1e3a8a;
+}
+
+.status-box.error {
+    background: #fff1f2;
+    border-color: #fecdd3;
+    color: #b91c1c;
+}
+
+.table-shell {
+    overflow: auto;
+    border: 1px solid #d9e2ec;
+    border-radius: 18px;
+    background: #fff;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 720px;
+}
+
+.data-table th,
+.data-table td {
+    padding: 0.8rem 0.85rem;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: top;
+}
+
+.data-table thead th {
+    background: #f8fafc;
+    color: #334e68;
+    font-size: 0.9rem;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.data-table tbody tr.clickable {
+    cursor: pointer;
+}
+
+.data-table tbody tr.selected,
+.data-table tbody tr:hover {
+    background: #eef6ff;
+}
+
+.detail-grid {
+    display: grid;
+    gap: 18px;
+}
+
+.detail-columns {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 18px;
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px;
+}
+
+.stat-card {
+    padding: 16px;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid #d9e2ec;
+}
+
+.stat-label {
+    color: #627d98;
+    font-size: 0.9rem;
+}
+
+.stat-value {
+    margin-top: 8px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #102a43;
+}
+
+.stat-detail {
+    margin-top: 6px;
+    color: #52606d;
+    font-size: 0.9rem;
+}
+
+.empty-state {
+    padding: 18px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 16px;
+    color: #627d98;
+    background: #f8fafc;
+}
+
+.stacked-label {
+    display: grid;
+    gap: 4px;
+}
+
+.muted {
+    color: #627d98;
+}
+
+.error-text {
+    color: #b91c1c;
+    white-space: pre-line;
+}
+
 #blazor-error-ui {
     background: #b32121;
     color: white;
