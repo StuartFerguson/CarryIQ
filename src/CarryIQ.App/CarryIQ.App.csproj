@@ -3,6 +3,8 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishReadyToRun>false</PublishReadyToRun>
     <UseMaui>true</UseMaui>
     <UseMauiBlazorWebView>true</UseMauiBlazorWebView>
     <SingleProject>true</SingleProject>
