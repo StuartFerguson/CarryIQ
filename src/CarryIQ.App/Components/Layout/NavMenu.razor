@@ -1,0 +1,23 @@
+@if (ViewModel.NavigationItems.Count > 0)
+{
+    <nav class="shell-nav-list">
+        @foreach (var item in ViewModel.NavigationItems)
+        {
+            <button type="button"
+                    class="shell-nav-item @(ReferenceEquals(ViewModel.SelectedNavigationItem, item) ? "is-active" : string.Empty)"
+                    @onclick="() => OnSelected.InvokeAsync(item)">
+                <span class="shell-nav-eyebrow">@item.Eyebrow</span>
+                <span class="shell-nav-title">@item.Title</span>
+                <span class="shell-nav-summary">@item.Summary</span>
+            </button>
+        }
+    </nav>
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public MainWindowViewModel ViewModel { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public EventCallback<ShellNavigationItemViewModel> OnSelected { get; set; }
+}
